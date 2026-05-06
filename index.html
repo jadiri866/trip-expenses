@@ -1,0 +1,1838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="Trip Expenses"/>
+  <title>Trip Expenses</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; font-family: 'Inter', -apple-system, sans-serif; overscroll-behavior: none; background: #F2EFE9; }
+    body { display: flex; justify-content: center; }
+
+    /* ── Tokens ── */
+    :root {
+      --bg:          #F2EFE9;
+      --bg2:         #E8E4DC;
+      --surface:     #FFFFFF;
+      --surface2:    #F7F5F1;
+      --border:      #E0DBD0;
+      --border2:     #C8C2B4;
+      --text:        #1A1814;
+      --text2:       #4A4540;
+      --text3:       #8A857A;
+      --navy:        #1E2D4A;
+      --navy-lt:     #2C4270;
+      --amber:       #C47A2E;
+      --amber-lt:    #E8A84A;
+      --amber-bg:    #FDF3E3;
+      --red:         #C0392B;
+      --red-bg:      #FDF0EE;
+      --green:       #2E7D52;
+      --green-bg:    #EBF5EF;
+      --shadow-sm:   0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md:   0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06);
+      --shadow-lg:   0 8px 24px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06);
+      --radius-sm:   8px;
+      --radius-md:   12px;
+      --radius-lg:   16px;
+      --nav-height:  72px;
+    }
+
+    /* ── App Shell ── */
+    #app { width: 100%; max-width: 430px; min-height: 100dvh; display: flex; flex-direction: column; position: relative; background: var(--bg); }
+
+    /* ── Screens ── */
+    .screen { display: none; flex-direction: column; min-height: 100dvh; padding-bottom: var(--nav-height); }
+    .screen.active { display: flex; }
+    .screen.no-nav { padding-bottom: 0; }
+
+    /* ── Top Header ── */
+    .top-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px 12px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .top-header .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--amber); margin-bottom: 2px; }
+    .top-header .page-title { font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -0.4px; }
+    .top-header .back-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+    .back-btn { background: none; border: none; color: var(--navy); font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; padding: 0; display: flex; align-items: center; gap: 4px; }
+    .back-btn::before { content: "‹"; font-size: 20px; line-height: 1; margin-top: -1px; }
+
+    /* ── Bottom Nav ── */
+    #bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 430px;
+      height: var(--nav-height);
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-around;
+      z-index: 100;
+      padding-bottom: env(safe-area-inset-bottom);
+      box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+    }
+    #bottom-nav.hidden { display: none; }
+
+    .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 8px 12px; background: none; border: none; font-family: 'Inter', sans-serif; flex: 1; }
+    .nav-item .nav-icon { font-size: 20px; line-height: 1; }
+    .nav-item .nav-label { font-size: 10px; font-weight: 500; color: var(--text3); letter-spacing: 0.2px; }
+    .nav-item.active .nav-label { color: var(--navy); font-weight: 600; }
+    .nav-item.active .nav-icon { filter: none; }
+
+    /* Raised center button */
+    .nav-add-wrap { position: relative; display: flex; flex-direction: column; align-items: center; flex: 1; }
+    .nav-add-btn {
+      width: 54px; height: 54px;
+      background: var(--navy);
+      border-radius: 50%;
+      border: none;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: var(--shadow-lg);
+      cursor: pointer;
+      position: absolute;
+      top: -24px;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .nav-add-btn:active { transform: scale(0.94); box-shadow: var(--shadow-sm); }
+    .nav-add-btn svg { width: 24px; height: 24px; stroke: #fff; stroke-width: 2.5; fill: none; }
+    .nav-add-label { font-size: 10px; font-weight: 500; color: var(--text3); margin-top: 34px; letter-spacing: 0.2px; }
+    .nav-add-label.active { color: var(--navy); font-weight: 600; }
+
+    /* ── Scrollable Content ── */
+    .screen-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 16px 8px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── Cards ── */
+    .card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
+    .card-pad { padding: 16px; }
+    .card-section { padding: 16px; border-bottom: 1px solid var(--border); }
+    .card-section:last-child { border-bottom: none; }
+
+    /* ── Field Labels ── */
+    .field-label { font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; display: block; }
+    .field-required { color: var(--red); font-size: 10px; text-transform: none; letter-spacing: 0; margin-left: 4px; font-weight: 500; }
+    .field-optional { color: var(--text3); font-size: 10px; text-transform: none; letter-spacing: 0; margin-left: 4px; font-weight: 400; }
+
+    /* ── Text Inputs ── */
+    .text-input {
+      width: 100%; padding: 12px 14px;
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      font-family: 'Inter', sans-serif; font-size: 15px; outline: none;
+      transition: border-color 0.15s, background 0.15s;
+      -webkit-appearance: none;
+    }
+    .text-input:focus { border-color: var(--navy); background: var(--surface); }
+    .text-input::placeholder { color: var(--text3); }
+    input[type="date"].text-input { color-scheme: light; }
+    input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.5; }
+
+    /* ── Amount Input ── */
+    .amount-wrap { display: flex; align-items: center; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; transition: border-color 0.15s; }
+    .amount-wrap:focus-within { border-color: var(--navy); background: var(--surface); }
+    .amount-symbol { padding: 0 14px; font-size: 22px; color: var(--text3); font-weight: 500; }
+    .amount-input { flex: 1; padding: 14px 14px 14px 0; background: transparent; border: none; outline: none; color: var(--text); font-family: 'Inter', sans-serif; font-size: 28px; font-weight: 700; }
+    .amount-input::placeholder { color: var(--border2); }
+
+    /* ── Conversion Badge ── */
+    .conversion-badge { display: flex; align-items: center; gap: 8px; background: var(--amber-bg); border: 1px solid #F0D5A8; border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; color: var(--text2); margin-top: 8px; }
+    .conv-arrow { color: var(--amber); font-size: 16px; }
+    .conv-usd { font-size: 16px; font-weight: 700; color: var(--amber); }
+    .conv-rate { font-size: 10px; color: var(--text3); margin-left: auto; }
+
+    /* ── Currency Bar ── */
+    .currency-bar { display: flex; gap: 8px; }
+    .currency-btn { flex: 1; padding: 10px 8px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); color: var(--text2); font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; text-align: center; transition: all 0.15s; }
+    .currency-btn.selected { border-color: var(--navy); background: var(--navy); color: #fff; font-weight: 600; }
+
+    /* ── Pill Buttons (payer, toggle) ── */
+    .pill-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pill-btn { padding: 9px 16px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 100px; color: var(--text2); font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .pill-btn.selected { background: var(--navy); border-color: var(--navy); color: #fff; font-weight: 600; }
+
+    /* ── Toggle Rows ── */
+    .toggle-list { display: flex; flex-direction: column; gap: 8px; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; cursor: pointer; transition: all 0.15s; }
+    .toggle-row.included { border-color: var(--navy); background: #EEF2F8; }
+    .toggle-row .t-left { display: flex; flex-direction: column; gap: 2px; }
+    .toggle-row .t-name { font-size: 14px; font-weight: 600; color: var(--text); }
+    .toggle-row .t-travelers { font-size: 11px; color: var(--text3); }
+    .toggle-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 12px; color: transparent; transition: all 0.15s; flex-shrink: 0; }
+    .toggle-row.included .toggle-check { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+    /* ── Split Preview ── */
+    .split-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .split-box { flex: 1; min-width: 80px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; text-align: center; }
+    .split-box.excluded { opacity: 0.4; }
+    .split-box .s-name { font-size: 10px; font-weight: 500; color: var(--text3); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .split-box .s-amt { font-size: 15px; font-weight: 700; color: var(--text); }
+    .split-box .s-share { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+    /* ── Category Grid ── */
+    .cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .cat-btn { padding: 10px 4px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); color: var(--text3); font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500; cursor: pointer; text-align: center; line-height: 1.4; transition: all 0.15s; }
+    .cat-btn .cat-emoji { font-size: 20px; display: block; margin-bottom: 3px; }
+    .cat-btn.selected { border-color: var(--navy); background: #EEF2F8; color: var(--navy); font-weight: 600; }
+
+    /* ── Primary Button ── */
+    .btn-primary { width: 100%; padding: 15px; background: var(--navy); border: none; border-radius: var(--radius-md); color: #fff; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; letter-spacing: 0.2px; transition: opacity 0.15s, transform 0.1s; }
+    .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .btn-secondary { width: 100%; padding: 13px; background: var(--surface2); border: 1.5px solid var(--border2); border-radius: var(--radius-md); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    .btn-secondary:active { background: var(--bg2); }
+    .btn-ghost { background: none; border: none; color: var(--text3); font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; padding: 8px 0; }
+    .btn-danger { background: var(--red-bg); border: 1.5px solid #F0C0BB; color: var(--red); border-radius: var(--radius-md); padding: 12px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; }
+
+    /* ── Trip Cards ── */
+    .trip-card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 16px 18px; cursor: pointer; border: 1px solid var(--border); transition: box-shadow 0.15s, transform 0.1s; }
+    .trip-card:active { transform: scale(0.99); box-shadow: var(--shadow-sm); }
+    .trip-card .tc-name { font-size: 17px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+    .trip-card .tc-date { font-size: 12px; color: var(--text3); margin-top: 3px; font-weight: 500; }
+    .trip-card .tc-people { font-size: 13px; color: var(--text2); margin-top: 8px; display: flex; align-items: center; gap: 5px; }
+    .trip-card .tc-arrow { margin-left: auto; color: var(--text3); font-size: 18px; }
+
+    /* ── Participant Rows ── */
+    .participant-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--surface2); border-radius: var(--radius-sm); border: 1px solid var(--border); }
+    .p-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--navy); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+    .p-info { flex: 1; min-width: 0; }
+    .p-name { font-size: 14px; font-weight: 600; color: var(--text); }
+    .p-meta { font-size: 11px; color: var(--text3); margin-top: 1px; }
+    .p-remove { background: none; border: none; color: var(--text3); font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1; }
+
+    /* ── Stepper ── */
+    .traveler-stepper { display: inline-flex; align-items: center; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+    .stepper-btn { background: none; border: none; color: var(--navy); font-size: 20px; padding: 8px 14px; cursor: pointer; font-weight: 600; }
+    .stepper-val { font-size: 16px; font-weight: 700; color: var(--text); min-width: 32px; text-align: center; }
+
+    /* ── Add Participant Form ── */
+    .add-p-form { background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-md); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .add-p-form .form-row { display: flex; gap: 10px; align-items: flex-end; }
+
+    /* ── Log Cards ── */
+    .log-card { background: var(--surface); border-radius: var(--radius-md); border: 1px solid var(--border); padding: 14px 16px; }
+    .log-card .lc-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .log-card .lc-what { font-size: 14px; font-weight: 600; color: var(--text); }
+    .log-card .lc-meta { font-size: 12px; color: var(--text3); margin-top: 3px; }
+    .log-card .lc-total { font-size: 18px; font-weight: 700; color: var(--text); white-space: nowrap; }
+    .log-card .lc-orig { font-size: 10px; color: var(--text3); text-align: right; margin-top: 1px; }
+    .log-card .lc-splits { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 6px; }
+    .split-pill { background: var(--surface2); border: 1px solid var(--border); border-radius: 100px; padding: 3px 10px; font-size: 11px; color: var(--text2); font-weight: 500; }
+
+    /* ── Preview Box ── */
+    .preview-box { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; }
+    .preview-title { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); margin-bottom: 10px; }
+    .preview-row { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .preview-row:last-child { border-bottom: none; }
+    .preview-row .pr-label { color: var(--text3); font-weight: 500; }
+    .preview-row .pr-val { color: var(--text); font-weight: 600; text-align: right; }
+
+    /* ── Info / Alert Boxes ── */
+    .info-box { background: var(--amber-bg); border: 1px solid #F0D5A8; border-radius: var(--radius-md); padding: 13px 15px; font-size: 13px; color: var(--text2); line-height: 1.6; }
+    .info-box strong { color: var(--amber); }
+    .success-box { background: var(--green-bg); border: 1px solid #B8DFC8; border-radius: var(--radius-md); padding: 13px 15px; font-size: 13px; color: var(--green); font-weight: 500; }
+
+    /* ── Empty State ── */
+    .empty-state { text-align: center; padding: 48px 20px; }
+    .empty-state .es-icon { font-size: 44px; margin-bottom: 12px; }
+    .empty-state .es-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    .empty-state .es-sub { font-size: 13px; color: var(--text3); line-height: 1.6; }
+
+    /* ── Section Headers ── */
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .section-title { font-size: 13px; font-weight: 600; color: var(--text2); letter-spacing: 0.3px; }
+
+    /* ── Sheet Link ── */
+    .sheet-link { display: inline-flex; align-items: center; gap: 5px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 100px; padding: 6px 12px; color: var(--navy); font-size: 12px; font-weight: 600; text-decoration: none; transition: background 0.15s; }
+    .sheet-link:active { background: var(--bg2); }
+
+    /* ── Summary Card (trip detail header) ── */
+    .summary-card { background: var(--navy); border-radius: var(--radius-lg); padding: 18px 20px; color: #fff; }
+    .summary-card .sc-trip { font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.6); margin-bottom: 4px; }
+    .summary-card .sc-label { font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 2px; }
+    .summary-card .sc-amount { font-size: 32px; font-weight: 700; letter-spacing: -1px; }
+    .summary-card .sc-row { display: flex; justify-content: space-between; align-items: flex-end; }
+    .summary-card .sc-link { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.15); border-radius: 100px; padding: 5px 12px; color: #fff; font-size: 12px; font-weight: 600; text-decoration: none; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: calc(var(--nav-height) + 12px);
+      left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--text); border-radius: var(--radius-md);
+      padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+      box-shadow: var(--shadow-lg); z-index: 200;
+      font-size: 13px; color: #fff; font-weight: 500;
+      max-width: 390px; width: calc(100% - 32px);
+      opacity: 0; transition: transform 0.3s cubic-bezier(0.34,1.4,0.64,1), opacity 0.2s;
+      pointer-events: none;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: all; }
+    #toast .toast-msg { flex: 1; }
+    #toast .toast-timer { font-size: 11px; color: rgba(255,255,255,0.5); min-width: 16px; text-align: center; }
+    #toast .undo-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); border-radius: var(--radius-sm); color: #fff; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; padding: 5px 12px; cursor: pointer; white-space: nowrap; }
+    #toast-progress { position: absolute; bottom: 0; left: 0; height: 2px; background: var(--amber-lt); border-radius: 0 0 var(--radius-md) var(--radius-md); width: 100%; }
+
+    /* ── Review Cards ── */
+    .review-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-md); overflow: hidden; transition: border-color 0.15s; }
+    .review-card.included { border-color: var(--navy); }
+    .rc-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 14px 16px; gap: 10px; }
+    .rc-what { font-size: 14px; font-weight: 600; color: var(--text); }
+    .rc-meta { font-size: 12px; color: var(--text3); margin-top: 2px; }
+    .rc-total { font-size: 16px; font-weight: 700; color: var(--text); white-space: nowrap; }
+    .rc-toggle { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--surface2); border-top: 1px solid var(--border); }
+    .rc-toggle-btn { flex: 1; padding: 8px; border-radius: var(--radius-sm); border: 1.5px solid var(--border); background: var(--surface); color: var(--text3); font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.15s; }
+    .rc-toggle-btn.active-exclude { background: var(--red-bg); border-color: #F0C0BB; color: var(--red); }
+    .rc-toggle-btn.active-include { background: #EEF2F8; border-color: var(--navy); color: var(--navy); }
+    .rc-share { font-size: 13px; font-weight: 700; color: var(--navy); min-width: 52px; text-align: right; }
+
+    /* ── Welcome Screen ── */
+    #screen-welcome { background: var(--surface); justify-content: center; align-items: center; padding: 40px 28px; text-align: center; }
+    .welcome-logo { width: 72px; height: 72px; background: var(--navy); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 24px; box-shadow: var(--shadow-md); }
+    .welcome-title { font-size: 28px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; margin-bottom: 10px; }
+    .welcome-sub { font-size: 15px; color: var(--text3); line-height: 1.6; margin-bottom: 36px; }
+    .welcome-form { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+
+    /* ── Divider ── */
+    .divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+    /* ── Spinner ── */
+    .spin { display: inline-block; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Manage Tab specific ── */
+    .manage-stat { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; }
+    .manage-stat .ms-label { font-size: 12px; color: var(--text3); font-weight: 500; }
+    .manage-stat .ms-val { font-size: 15px; font-weight: 700; color: var(--text); }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Toast ── -->
+  <div id="toast">
+    <span class="toast-msg" id="toast-msg">✓ Expense logged</span>
+    <span class="toast-timer" id="toast-timer">10</span>
+    <button class="undo-btn" id="undo-btn" onclick="undoLastExpense()">Undo</button>
+    <div id="toast-progress"></div>
+  </div>
+
+  <!-- ── Bottom Nav ── -->
+  <nav id="bottom-nav">
+    <button class="nav-item active" id="nav-trips" onclick="navTo('trips')">
+      <span class="nav-icon">🗺️</span>
+      <span class="nav-label">Trips</span>
+    </button>
+    <button class="nav-item" id="nav-log" onclick="navTo('log')">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">Log</span>
+    </button>
+    <div class="nav-add-wrap">
+      <button class="nav-add-btn" onclick="navTo('add')" id="nav-add-btn">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <span class="nav-add-label" id="nav-add-label">Add</span>
+    </div>
+    <button class="nav-item" id="nav-manage" onclick="navTo('manage')">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label">Manage</span>
+    </button>
+    <button class="nav-item" id="nav-settings" onclick="navTo('settings')">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">Account</span>
+    </button>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: Welcome                                           -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="screen-welcome" class="screen no-nav active">
+    <div class="welcome-logo">✈️</div>
+    <div class="welcome-title">Trip Expenses</div>
+    <div class="welcome-sub">Track and split shared expenses across all your trips with family and friends.</div>
+    <div class="welcome-form">
+      <div>
+        <label class="field-label">Your Email Address</label>
+        <input type="email" class="text-input" id="welcome-email" placeholder="you@example.com"/>
+      </div>
+      <button class="btn-primary" onclick="submitWelcome()">Get Started</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: My Trips                                          -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="screen-trips" class="screen">
+    <div class="top-header">
+      <div class="eyebrow">Trip Expenses</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="page-title">My Trips</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onclick="showImportTrip()" style="background:var(--surface2);border:1.5px solid var(--border2);color:var(--navy);border-radius:100px;padding:5px 12px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">Import</button>
+          <button onclick="showNewTrip()" style="background:var(--navy);border:none;color:#fff;border-radius:100px;padding:5px 12px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:var(--shadow-sm)">+ New Trip</button>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-top:4px" id="trips-user-email"></div>
+    </div>
+    <div class="screen-body" id="trips-list" style="gap:10px">
+      <!-- Active and past trips rendered here -->
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: New Trip                                          -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="screen-new-trip" class="screen no-nav">
+    <div class="top-header">
+      <div class="back-row"><button class="back-btn" onclick="showScreen('screen-trips')">My Trips</button></div>
+      <div class="eyebrow">New Trip</div>
+      <div class="page-title">Create Trip</div>
+    </div>
+    <div class="screen-body">
+
+      <div class="info-box">
+        The app will create a new Google Sheet, set up all columns and formulas, and share it with every participant automatically.
+      </div>
+
+      <div class="card card-pad" style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label class="field-label">Trip Name<span class="field-required">*</span></label>
+          <input type="text" class="text-input" id="new-trip-name" placeholder="e.g. Italy 2027"/>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-header">
+          <span class="section-title">Participants</span>
+        </div>
+        <div id="participant-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"></div>
+        <div class="add-p-form">
+          <div class="field-label" style="margin-bottom:2px">Add Participant</div>
+          <input type="text" class="text-input" id="new-p-name" placeholder="Name (e.g. Jace, or The Smiths)"/>
+          <input type="email" class="text-input" id="new-p-email" placeholder="Email address"/>
+          <div class="form-row">
+            <div style="flex:1">
+              <div class="field-label" style="margin-bottom:6px">Travelers<span class="field-optional">(how many this covers)</span></div>
+              <div class="traveler-stepper">
+                <button class="stepper-btn" onclick="adjustTravelers(-1)">−</button>
+                <span class="stepper-val" id="traveler-count">1</span>
+                <button class="stepper-btn" onclick="adjustTravelers(1)">+</button>
+              </div>
+            </div>
+            <button class="btn-secondary" style="flex:1;padding:10px" onclick="addParticipant()">+ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="create-trip-btn" onclick="createTrip()">Create Trip & Generate Sheet</button>
+      <div id="new-trip-status" style="display:none;font-size:13px;text-align:center;color:var(--text3);padding:4px 0"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: Trip Detail                                       -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="screen-trip-detail" class="screen">
+    <div class="top-header">
+      <div class="back-row"><button class="back-btn" onclick="showScreen('screen-trips')">My Trips</button></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div style="min-width:0;flex:1">
+          <div class="eyebrow" id="detail-eyebrow">Trip</div>
+          <div class="page-title" id="detail-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+        </div>
+        <a id="sheet-link" href="#" target="_blank" class="sheet-link">Sheet ↗</a>
+      </div>
+    </div>
+
+    <!-- Summary card -->
+    <div style="padding:14px 16px 0">
+      <div class="summary-card">
+        <div class="sc-trip" id="sc-trip-name">Trip</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px">
+          <div>
+            <div class="sc-label">Total Expensed</div>
+            <div class="sc-amount" id="detail-trip-total">$0.00</div>
+          </div>
+          <div style="text-align:right">
+            <div class="sc-label">My Portion</div>
+            <div style="font-size:22px;font-weight:700;letter-spacing:-0.5px" id="detail-my-total">$0.00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- The content area switches by active nav tab -->
+    <div style="flex:1;overflow-y:auto;padding:14px 16px 8px">
+
+      <!-- ADD PANEL -->
+      <div id="detail-panel-add" class="panel-section" style="display:flex;flex-direction:column;gap:14px">
+
+        <div class="card card-pad" style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <label class="field-label">Currency</label>
+            <div class="currency-bar" id="currency-bar"></div>
+          </div>
+          <div>
+            <label class="field-label">Amount<span class="field-required">*</span> <span id="currency-label-hint" style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0;font-weight:400"></span></label>
+            <div class="amount-wrap">
+              <span class="amount-symbol" id="currency-symbol">$</span>
+              <input type="number" inputmode="decimal" placeholder="0.00" class="amount-input" id="exp-amount" oninput="onAmountChange()"/>
+            </div>
+            <div class="conversion-badge" id="conversion-badge" style="display:none">
+              <span id="conv-original"></span>
+              <span class="conv-arrow">→</span>
+              <span class="conv-usd" id="conv-usd"></span>
+              <span class="conv-rate" id="conv-rate"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-pad" style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <label class="field-label">Who Paid</label>
+            <div class="pill-grid" id="payer-grid"></div>
+          </div>
+          <div class="divider"></div>
+          <div>
+            <label class="field-label">Split Between<span class="field-optional">(tap to include/exclude)</span></label>
+            <div class="toggle-list" id="toggle-grid"></div>
+          </div>
+        </div>
+
+        <div class="card card-pad" id="split-preview-wrap" style="display:none">
+          <label class="field-label">Split Preview</label>
+          <div class="split-grid" id="split-grid"></div>
+        </div>
+
+        <div class="card card-pad" style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <label class="field-label">Category<span class="field-optional">(optional)</span></label>
+            <div class="cat-grid" id="cat-grid"></div>
+          </div>
+          <div class="divider"></div>
+          <div>
+            <label class="field-label">Description<span class="field-required">*</span></label>
+            <input type="text" class="text-input" id="exp-description" placeholder="e.g. Dinner at La Piazza" oninput="updatePreview()"/>
+          </div>
+          <div>
+            <label class="field-label">Notes<span class="field-optional">(optional)</span></label>
+            <input type="text" class="text-input" id="exp-notes" placeholder="Any extra details..." oninput="updatePreview()"/>
+          </div>
+          <div>
+            <label class="field-label">Date</label>
+            <input type="date" class="text-input" id="exp-date"/>
+          </div>
+        </div>
+
+        <div class="card card-pad" id="exp-preview" style="display:none">
+          <div class="preview-title">Sheet Row Preview</div>
+          <div id="exp-preview-content"></div>
+        </div>
+
+        <button class="btn-primary" id="log-btn" onclick="logExpense()">Log Expense</button>
+        <div style="height:8px"></div>
+      </div>
+
+      <!-- LOG PANEL -->
+      <div id="detail-panel-log" class="panel-section" style="display:none;flex-direction:column;gap:10px">
+        <div class="empty-state" id="log-empty">
+          <div class="es-icon">📋</div>
+          <div class="es-title">No expenses logged yet</div>
+          <div class="es-sub">Expenses added manually in the sheet won't appear here.</div>
+        </div>
+        <div id="log-list" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
+      <!-- MANAGE PANEL -->
+      <div id="detail-panel-manage" class="panel-section" style="display:none;flex-direction:column;gap:14px">
+
+        <div>
+          <div class="section-header"><span class="section-title">Current Participants</span></div>
+          <div id="manage-participant-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Add participant (hidden for archived trips) -->
+        <div id="manage-add-participant-section">
+          <div class="section-header"><span class="section-title">Add Participant Mid-Trip</span></div>
+          <div class="add-p-form">
+            <input type="text" class="text-input" id="manage-p-name" placeholder="Name"/>
+            <input type="email" class="text-input" id="manage-p-email" placeholder="Email address"/>
+            <div class="form-row">
+              <div style="flex:1">
+                <div class="field-label" style="margin-bottom:6px">Travelers</div>
+                <div class="traveler-stepper">
+                  <button class="stepper-btn" onclick="adjustManageTravelers(-1)">−</button>
+                  <span class="stepper-val" id="manage-traveler-count">1</span>
+                  <button class="stepper-btn" onclick="adjustManageTravelers(1)">+</button>
+                </div>
+              </div>
+              <button class="btn-secondary" style="flex:1;padding:10px" onclick="addParticipantToTrip()">+ Add</button>
+            </div>
+          </div>
+          <div id="manage-status" style="display:none;margin-top:10px;font-size:13px;text-align:center;color:var(--text3)"></div>
+        </div>
+
+        <div class="divider" id="manage-archive-divider"></div>
+
+        <!-- Settle Up & Archive (hidden for archived trips) -->
+        <div id="manage-archive-section">
+          <div class="section-header" style="margin-bottom:10px"><span class="section-title">Settle Up & Archive</span></div>
+          <div id="settle-summary" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
+          <button class="btn-primary" id="archive-btn" onclick="confirmArchive()" style="background:var(--amber)">
+            Settle Up & Archive Trip
+          </button>
+          <div id="archive-status" style="display:none;margin-top:10px;font-size:13px;text-align:center"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Delete trip -->
+        <div>
+          <div class="section-header" style="margin-bottom:10px"><span class="section-title">Remove from My Trips</span></div>
+          <div style="font-size:13px;color:var(--text3);margin-bottom:10px;line-height:1.5">
+            Removes this trip from your app only. The Google Sheet and other travelers are unaffected.
+          </div>
+          <button class="btn-danger" onclick="deleteLocalTrip()">Remove Trip from My App</button>
+        </div>
+
+      </div>
+
+      <!-- SETTINGS PANEL -->
+      <div id="detail-panel-settings" class="panel-section" style="display:none;flex-direction:column;gap:14px">
+        <div class="card card-pad" style="display:flex;flex-direction:column;gap:12px">
+          <div class="manage-stat">
+            <span class="ms-label">Signed in as</span>
+            <span class="ms-val" id="settings-email" style="font-size:13px;color:var(--text2)"></span>
+          </div>
+          <div class="divider"></div>
+          <button class="btn-danger" onclick="changeUser()">Sign Out</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: Import Existing Trip                              -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="screen-import-trip" class="screen no-nav">
+    <div class="top-header">
+      <div class="back-row"><button class="back-btn" onclick="showScreen('screen-trips')">My Trips</button></div>
+      <div class="eyebrow">Import Trip</div>
+      <div class="page-title">Existing Sheet</div>
+    </div>
+    <div class="screen-body">
+
+      <!-- Step 1: Paste URL -->
+      <div id="import-step-1" style="display:flex;flex-direction:column;gap:14px">
+        <div class="info-box">
+          Paste the link to your existing Google Sheet. The app will read it and fill in everything automatically.
+        </div>
+        <div class="card card-pad">
+          <label class="field-label">Google Sheet Link<span class="field-required">*</span></label>
+          <input type="url" class="text-input" id="import-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/..."/>
+        </div>
+        <button class="btn-primary" id="import-preview-btn" onclick="previewImportSheet()">Read Sheet →</button>
+        <div id="import-preview-status" style="display:none;font-size:13px;text-align:center;padding:8px 0;color:var(--text3)"></div>
+      </div>
+
+      <!-- Step 2: Confirm -->
+      <div id="import-step-2" style="display:none;flex-direction:column;gap:14px">
+        <div class="success-box">✓ Sheet read successfully. Review participants below — add email addresses so each person can see this trip in their own app.</div>
+        <div class="card card-pad">
+          <label class="field-label">Trip Name</label>
+          <input type="text" class="text-input" id="import-trip-name" placeholder="Trip name"/>
+        </div>
+        <div>
+          <div class="section-header" style="margin-bottom:10px">
+            <span class="section-title">Participants</span>
+            <span style="font-size:11px;color:var(--text3)">Add email addresses</span>
+          </div>
+          <div id="import-participant-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+        <button class="btn-primary" id="import-trip-btn" onclick="confirmImport()">Import Trip</button>
+        <button class="btn-ghost" style="text-align:center;width:100%" onclick="resetImport()">← Start Over</button>
+        <div id="import-trip-status" style="display:none;font-size:13px;text-align:center;color:var(--text3);padding:4px 0"></div>
+      </div>
+
+    </div>
+  </div>
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: Review Expenses (after adding mid-trip participant)-->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="screen-review" class="screen no-nav">
+    <div class="top-header">
+      <div class="back-row"><button class="back-btn" onclick="showScreen('screen-trip-detail')">Back to Trip</button></div>
+      <div class="eyebrow">New Participant Added</div>
+      <div class="page-title">Review Expenses</div>
+    </div>
+    <div class="screen-body">
+      <div class="info-box">
+        <strong id="review-participant-name">New participant</strong> has been added. For each existing expense below, choose whether to include them. Tap <strong>Save Changes</strong> when done.
+      </div>
+      <div id="review-expense-list" style="display:flex;flex-direction:column;gap:10px"></div>
+      <button class="btn-primary" id="review-save-btn" onclick="saveReviewChanges()">Save Changes</button>
+      <div id="review-status" style="display:none;font-size:13px;text-align:center;color:var(--text3);padding:4px 0"></div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// CONFIGURATION
+// ─────────────────────────────────────────────────────────────
+const MASTER_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxzjWH8WVGymcB_y-K_j5cPmQK_E0bC-ZUYKbvqURHLF7B_MY3FqXkX4dGNpScGjI5mUw/exec";
+
+// ─────────────────────────────────────────────────────────────
+// Categories
+// ─────────────────────────────────────────────────────────────
+const CATEGORIES = [
+  ["🍽️","Food & Drink"],["🚗","Transport"],["🏨","Hotel"],
+  ["🎭","Activities"],["🛍️","Shopping"],["💊","Health"],
+  ["📡","Comms"],["🔖","Other"]
+];
+
+// ─────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────
+let currentUser             = null;
+let allTrips                = [];
+let currentTrip             = null;
+let newTripParticipants     = [];
+let newTravelerCount        = 1;
+let selectedPayer           = null;
+let selectedCategory        = null;
+let includedMap             = {};
+let expenseLog              = [];
+let lastLoggedRow           = null;
+let toastTimer              = null;
+let toastCountdown          = null;
+let manageTravelerCount     = 1;
+let newParticipantBeingAdded = null;
+let reviewDecisions         = {};
+let currentDetailTab        = 'add';
+
+// Currency state
+const CURRENCIES = [
+  { code: "USD", symbol: "$", name: "US Dollar",     flag: "🇺🇸" },
+  { code: "GBP", symbol: "£", name: "British Pound", flag: "🇬🇧" },
+  { code: "EUR", symbol: "€", name: "Euro",          flag: "🇪🇺" },
+];
+const COUNTRY_CURRENCY = {
+  US:"USD",GB:"GBP",IE:"EUR",DE:"EUR",FR:"EUR",ES:"EUR",IT:"EUR",
+  PT:"EUR",NL:"EUR",BE:"EUR",AT:"EUR",GR:"EUR",
+};
+let selectedCurrency = CURRENCIES[0];
+let exchangeRate     = 1.0;
+let rateLoading      = false;
+let rateCache        = {};
+
+// ─────────────────────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  const saved = localStorage.getItem("trip-tracker-user");
+  if (saved) { currentUser = JSON.parse(saved); loadTripsScreen(); }
+  document.getElementById("exp-date").value = new Date().toISOString().split("T")[0];
+  buildCatGrid();
+  hideNav();
+});
+
+// ─────────────────────────────────────────────────────────────
+// Nav
+// ─────────────────────────────────────────────────────────────
+function showNav() { document.getElementById("bottom-nav").classList.remove("hidden"); }
+function hideNav() { document.getElementById("bottom-nav").classList.add("hidden"); }
+
+function navTo(tab) {
+  if (tab === 'trips') { showScreen('screen-trips'); updateNavActive('trips'); return; }
+  if (!currentTrip && (tab === 'add' || tab === 'log' || tab === 'manage')) {
+    showScreen('screen-trips'); updateNavActive('trips'); return;
+  }
+  if (tab === 'add' && currentTrip?.archived) return; // read-only
+  currentDetailTab = tab;
+
+  // Update nav active states
+  ['trips','log','manage','settings'].forEach(t => {
+    document.getElementById('nav-' + t)?.classList.toggle('active', t === tab);
+  });
+  const addLabel = document.getElementById('nav-add-label');
+  if (addLabel) addLabel.classList.toggle('active', tab === 'add');
+
+  if (tab === 'trips') {
+    showScreen('screen-trips');
+    return;
+  }
+
+  // Show trip detail with correct panel
+  showScreen('screen-trip-detail');
+  showDetailPanel(tab);
+}
+
+function showDetailPanel(tab) {
+  ['add','log','manage','settings'].forEach(t => {
+    const el = document.getElementById('detail-panel-' + t);
+    if (el) el.style.display = t === tab ? 'flex' : 'none';
+  });
+  if (tab === 'log')     loadAndRenderLog();
+  if (tab === 'manage')  { renderManageParticipants(); loadSettleSummary(); }
+  if (tab === 'settings') {
+    const el = document.getElementById('settings-email');
+    if (el && currentUser) el.textContent = currentUser.email;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Screen navigation
+// ─────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  window.scrollTo(0,0);
+
+  const noNavScreens = ['screen-welcome','screen-new-trip','screen-review','screen-import-trip','screen-trips'];
+  if (noNavScreens.includes(id)) hideNav();
+  else showNav();
+}
+
+function showNewTrip() {
+  newTripParticipants = []; newTravelerCount = 1;
+  document.getElementById("new-trip-name").value = "";
+  document.getElementById("new-p-name").value    = "";
+  document.getElementById("new-p-email").value   = "";
+  document.getElementById("traveler-count").textContent = "1";
+  renderParticipantList();
+  showScreen("screen-new-trip");
+}
+
+// ─────────────────────────────────────────────────────────────
+// Welcome
+// ─────────────────────────────────────────────────────────────
+function submitWelcome() {
+  const email = document.getElementById("welcome-email").value.trim();
+  if (!email || !email.includes("@")) { alert("Please enter a valid email address."); return; }
+  currentUser = { email };
+  localStorage.setItem("trip-tracker-user", JSON.stringify(currentUser));
+  loadTripsScreen();
+}
+
+function changeUser() {
+  localStorage.removeItem("trip-tracker-user");
+  currentUser = null; currentTrip = null;
+  hideNav();
+  showScreen("screen-welcome");
+}
+
+// ─────────────────────────────────────────────────────────────
+// My Trips
+// ─────────────────────────────────────────────────────────────
+async function loadTripsScreen() {
+  showScreen("screen-trips");
+  hideNav();
+  document.getElementById("trips-user-email").textContent = currentUser.email;
+  document.getElementById("trips-list").innerHTML = `<div class="empty-state"><div class="es-icon"><span class="spin">⟳</span></div><div class="es-title">Loading trips...</div></div>`;
+
+  try {
+    const res     = await apiGet({ action: "getTrips", email: currentUser.email });
+    const deleted = JSON.parse(localStorage.getItem("deleted-trips") || "[]");
+    allTrips      = (res.trips || []).filter(t => !deleted.includes(t.tripId));
+    const local   = JSON.parse(localStorage.getItem("local-trips") || "[]");
+    local.forEach(lt => { if (!deleted.includes(lt.tripId) && !allTrips.find(t => t.tripId === lt.tripId)) allTrips.push(lt); });
+    renderTripsList();
+  } catch(err) {
+    document.getElementById("trips-list").innerHTML = `<div class="empty-state"><div class="es-icon">⚠️</div><div class="es-title">Could not load trips</div><div class="es-sub">${err.message}</div></div>`;
+  }
+}
+
+function renderTripsList() {
+  const list   = document.getElementById("trips-list");
+  const active = allTrips.filter(t => !t.archived);
+  const past   = allTrips.filter(t => t.archived);
+
+  if (allTrips.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="es-icon">🗺️</div><div class="es-title">No trips yet</div><div class="es-sub">Tap + to create your first trip. Trips shared with you will appear here.</div></div>`;
+    return;
+  }
+
+  const tripCard = (trip) => {
+    const people = trip.participants.map(p => p.name).join(", ");
+    const badge  = trip.archived ? `<span style="background:var(--bg2);border:1px solid var(--border2);border-radius:100px;padding:2px 8px;font-size:10px;font-weight:600;color:var(--text3);margin-left:8px">Archived</span>` : "";
+    return `<div class="trip-card ${trip.archived?"":""}` + `" onclick="openTrip('${trip.tripId}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+            <span class="tc-name">${trip.tripName}</span>${badge}
+          </div>
+          <div class="tc-date">Created ${trip.createdAt || ""}</div>
+        </div>
+        <span class="tc-arrow">›</span>
+      </div>
+      <div class="tc-people">👥 ${people}</div>
+    </div>`;
+  };
+
+  let html = "";
+  if (active.length > 0) {
+    html += `<div style="font-size:11px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);padding:4px 2px 6px">Active Trips</div>`;
+    html += active.map(tripCard).join("");
+  }
+  if (past.length > 0) {
+    html += `<div style="font-size:11px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);padding:${active.length>0?"16px":"4px"} 2px 6px">Past Trips</div>`;
+    html += past.map(tripCard).join("");
+  }
+  list.innerHTML = html;
+}
+
+function openTrip(tripId) {
+  currentTrip = allTrips.find(t => t.tripId === tripId);
+  if (!currentTrip) return;
+
+  expenseLog = JSON.parse(localStorage.getItem("expense-log-" + tripId) || "[]");
+
+  document.getElementById("detail-eyebrow").textContent  = "Trip";
+  document.getElementById("detail-title").textContent    = currentTrip.tripName;
+  document.getElementById("sc-trip-name").textContent    = currentTrip.tripName.toUpperCase();
+
+  const sheetLink = document.getElementById("sheet-link");
+  sheetLink.href  = currentTrip.sheetUrl || "#";
+  sheetLink.style.display = currentTrip.sheetUrl ? "inline-flex" : "none";
+
+  const myP = currentTrip.participants.find(p => p.email && p.email.toLowerCase() === currentUser.email.toLowerCase());
+  selectedPayer = myP ? myP.name : currentTrip.participants[0].name;
+
+  includedMap = {};
+  currentTrip.participants.forEach(p => { includedMap[p.name] = true; });
+
+  selectedCategory = null;
+  buildCurrencyBar();
+  // Restore last used currency for this trip, or detect from location
+  const savedCurrency = localStorage.getItem("trip-currency-" + currentTrip.tripId);
+  if (savedCurrency && CURRENCIES.find(c => c.code === savedCurrency)) {
+    selectCurrency(savedCurrency);
+  } else {
+    detectAndSetCurrency();
+  }
+
+  // For archived trips, go straight to log; disable add
+  const isArchived = currentTrip.archived;
+  const startTab   = isArchived ? 'log' : 'add';
+
+  if (!isArchived) {
+    buildPayerGrid();
+    buildToggleGrid();
+    updateSplitPreview();
+  }
+  updateMyTotal();
+
+  // Background fetch to keep totals accurate regardless of active tab
+  fetchAndUpdateTotals();
+
+  currentDetailTab = startTab;
+  ['trips','log','manage','settings'].forEach(t => document.getElementById('nav-' + t)?.classList.remove('active'));
+  if (startTab === 'add') document.getElementById('nav-add-label').classList.add('active');
+  else document.getElementById('nav-' + startTab)?.classList.add('active');
+
+  // Hide add button for archived trips
+  const addBtn = document.getElementById('nav-add-btn');
+  if (addBtn) addBtn.style.opacity = isArchived ? '0.35' : '1';
+  const addLabel = document.getElementById('nav-add-label');
+  if (addLabel) addLabel.style.opacity = isArchived ? '0.35' : '1';
+
+  showDetailPanel(startTab);
+  showScreen("screen-trip-detail");
+}
+
+// ─────────────────────────────────────────────────────────────
+// New Trip
+// ─────────────────────────────────────────────────────────────
+function adjustTravelers(delta) {
+  newTravelerCount = Math.max(1, newTravelerCount + delta);
+  document.getElementById("traveler-count").textContent = newTravelerCount;
+}
+
+function addParticipant() {
+  const name      = document.getElementById("new-p-name").value.trim();
+  const email     = document.getElementById("new-p-email").value.trim();
+  const travelers = newTravelerCount;
+  if (!name) { alert("Please enter a name."); return; }
+  newTripParticipants.push({ name, email, travelers });
+  renderParticipantList();
+  document.getElementById("new-p-name").value  = "";
+  document.getElementById("new-p-email").value = "";
+  newTravelerCount = 1;
+  document.getElementById("traveler-count").textContent = "1";
+}
+
+function removeParticipant(i) {
+  newTripParticipants.splice(i, 1);
+  renderParticipantList();
+}
+
+function renderParticipantList() {
+  const list = document.getElementById("participant-list");
+  if (!newTripParticipants.length) { list.innerHTML = ""; return; }
+  list.innerHTML = newTripParticipants.map((p, i) => `
+    <div class="participant-row">
+      <div class="p-avatar">${p.name.charAt(0).toUpperCase()}</div>
+      <div class="p-info">
+        <div class="p-name">${p.name}</div>
+        <div class="p-meta">${p.travelers} traveler${p.travelers>1?"s":""} · ${p.email||"no email"}</div>
+      </div>
+      <button class="p-remove" onclick="removeParticipant(${i})">×</button>
+    </div>`).join("");
+}
+
+async function createTrip() {
+  const tripName = document.getElementById("new-trip-name").value.trim();
+  if (!tripName) { alert("Please enter a trip name."); return; }
+  if (!newTripParticipants.length) { alert("Please add at least one participant."); return; }
+  const userInList = newTripParticipants.some(p => p.email.toLowerCase() === currentUser.email.toLowerCase());
+  if (!userInList) { alert("Make sure you've added yourself as a participant with your email:\n" + currentUser.email); return; }
+
+  const btn    = document.getElementById("create-trip-btn");
+  const status = document.getElementById("new-trip-status");
+  btn.disabled = true; btn.textContent = "Creating trip...";
+  status.style.display = "block"; status.textContent = "Creating Google Sheet and setting up formulas...";
+
+  try {
+    const result = await apiGet({ action: "createTrip", tripName, participants: newTripParticipants });
+    const local  = JSON.parse(localStorage.getItem("local-trips") || "[]");
+    local.push({ tripId: result.tripId, tripName: result.tripName, sheetId: result.sheetId, sheetUrl: result.sheetUrl, createdAt: result.createdAt, participants: result.participants });
+    localStorage.setItem("local-trips", JSON.stringify(local));
+    status.textContent = "✓ Trip created!";
+    await loadTripsScreen();
+  } catch(err) {
+    status.style.color = "var(--red)"; status.textContent = "Error: " + err.message;
+  } finally {
+    btn.disabled = false; btn.textContent = "Create Trip & Generate Sheet";
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Expense Logger
+// ─────────────────────────────────────────────────────────────
+function buildPayerGrid() {
+  // Default payer to current user if not yet set
+  if (!selectedPayer) {
+    const myP = currentTrip.participants.find(p => p.email && p.email.toLowerCase() === currentUser?.email.toLowerCase());
+    selectedPayer = myP ? myP.name : currentTrip.participants[0].name;
+  }
+  document.getElementById("payer-grid").innerHTML = currentTrip.participants.map(p => `
+    <button class="pill-btn ${p.name===selectedPayer?"selected":""}" id="payer-${CSS.escape(p.name)}" onclick="selectPayer('${p.name}')">
+      ${p.name}
+    </button>`).join("");
+}
+
+function selectPayer(name) {
+  selectedPayer = name;
+  currentTrip.participants.forEach(p => {
+    document.getElementById("payer-"+CSS.escape(p.name))?.classList.toggle("selected", p.name===name);
+  });
+  updatePreview();
+}
+
+function buildToggleGrid() {
+  document.getElementById("toggle-grid").innerHTML = currentTrip.participants.map(p => `
+    <div class="toggle-row included" id="toggle-${CSS.escape(p.name)}" onclick="toggleParticipant('${p.name}')">
+      <div class="t-left">
+        <div class="t-name">${p.name}</div>
+        <div class="t-travelers">${p.travelers} traveler${p.travelers>1?"s":""}</div>
+      </div>
+      <div class="toggle-check">✓</div>
+    </div>`).join("");
+}
+
+function toggleParticipant(name) {
+  includedMap[name] = !includedMap[name];
+  const row = document.getElementById("toggle-"+CSS.escape(name));
+  if (row) {
+    row.classList.toggle("included", includedMap[name]);
+    row.querySelector(".toggle-check").textContent = includedMap[name] ? "✓" : "";
+  }
+  updateSplitPreview(); updatePreview();
+}
+
+function buildCatGrid() {
+  selectedCategory = null;
+  document.getElementById("cat-grid").innerHTML = CATEGORIES.map((cat, i) => `
+    <button class="cat-btn" id="cat-${i}" onclick="selectCategory(${i})">
+      <span class="cat-emoji">${cat[0]}</span>${cat[1].split(" ")[0]}
+    </button>`).join("");
+}
+
+function selectCategory(i) {
+  selectedCategory = CATEGORIES[i];
+  document.querySelectorAll(".cat-btn").forEach((b,j) => b.classList.toggle("selected", i===j));
+  updatePreview();
+}
+
+function calcSplits(total) {
+  if (!currentTrip) return {};
+  const included       = currentTrip.participants.filter(p => includedMap[p.name]);
+  const totalTravelers = included.reduce((s,p) => s+p.travelers, 0);
+  if (!totalTravelers) return {};
+  const splits = {}; let assigned = 0;
+  included.forEach((p,i) => {
+    if (i === included.length-1) { splits[p.name] = Math.round((total-assigned)*100)/100; }
+    else { const share = Math.round(total*p.travelers/totalTravelers*100)/100; splits[p.name]=share; assigned+=share; }
+  });
+  currentTrip.participants.filter(p => !includedMap[p.name]).forEach(p => { splits[p.name]=0; });
+  return splits;
+}
+
+async function onAmountChange() {
+  const amount = parseFloat(document.getElementById("exp-amount").value) || 0;
+  if (amount > 0 && selectedCurrency.code !== "USD" && exchangeRate === null && !rateLoading) {
+    rateLoading = true; showConversionLoading();
+    await fetchRate(selectedCurrency.code);
+    rateLoading = false;
+  }
+  updateConversionBadge(); updateSplitPreview(); updatePreview();
+}
+
+function updateSplitPreview() {
+  if (!currentTrip) return;
+  const total = parseFloat(document.getElementById("exp-amount").value) || 0;
+  const wrap  = document.getElementById("split-preview-wrap");
+  if (total <= 0) { wrap.style.display = "none"; return; }
+  wrap.style.display = "block";
+  const splits         = calcSplits(getUSDAmount());
+  const included       = currentTrip.participants.filter(p => includedMap[p.name]);
+  const totalTravelers = included.reduce((s,p) => s+p.travelers, 0);
+  document.getElementById("split-grid").innerHTML = currentTrip.participants.map(p => {
+    const excl = !includedMap[p.name]; const amt = splits[p.name]||0;
+    return `<div class="split-box ${excl?"excluded":""}">
+      <div class="s-name">${p.name}</div>
+      <div class="s-amt">${excl?"—":"$"+amt.toFixed(2)}</div>
+      <div class="s-share">${excl?"out":p.travelers+"/"+totalTravelers}</div>
+    </div>`;
+  }).join("");
+}
+
+function updatePreview() {
+  if (!currentTrip) return;
+  const rawAmount = parseFloat(document.getElementById("exp-amount").value) || 0;
+  const preview   = document.getElementById("exp-preview");
+  if (rawAmount <= 0) { preview.style.display = "none"; return; }
+  const usd     = getUSDAmount();
+  const desc    = document.getElementById("exp-description").value.trim();
+  const notes   = document.getElementById("exp-notes").value.trim();
+  const whatFor = selectedCategory ? `${selectedCategory[1]} - ${desc||""}`.replace(/ - $/,"") : desc;
+  const splits  = calcSplits(usd);
+  const isUSD   = selectedCurrency.code === "USD";
+  let rows = "";
+  if (whatFor) rows += `<div class="preview-row"><span class="pr-label">What for</span><span class="pr-val">${whatFor}</span></div>`;
+  rows += `<div class="preview-row"><span class="pr-label">Who Paid</span><span class="pr-val">${selectedPayer}</span></div>`;
+  if (!isUSD) rows += `<div class="preview-row"><span class="pr-label">Charged</span><span class="pr-val">${selectedCurrency.symbol}${rawAmount.toFixed(2)} ${selectedCurrency.code}</span></div>`;
+  rows += `<div class="preview-row"><span class="pr-label">Total (USD)</span><span class="pr-val">$${usd.toFixed(2)}</span></div>`;
+  currentTrip.participants.forEach(p => {
+    const amt = splits[p.name]||0;
+    rows += `<div class="preview-row"><span class="pr-label">${p.name} owes</span><span class="pr-val">${amt>0?"$"+amt.toFixed(2):"—"}</span></div>`;
+  });
+  if (notes) rows += `<div class="preview-row"><span class="pr-label">Notes</span><span class="pr-val">${notes}</span></div>`;
+  document.getElementById("exp-preview-content").innerHTML = rows;
+  preview.style.display = "block";
+}
+
+async function logExpense() {
+  const total = parseFloat(document.getElementById("exp-amount").value) || 0;
+  if (total <= 0) { alert("Enter a valid amount."); return; }
+  if (!selectedPayer) { alert("Select who paid."); return; }
+  if (rateLoading) { alert("Exchange rate is still loading, please wait a moment."); return; }
+  const descCheck = document.getElementById("exp-description").value.trim();
+  if (!descCheck) { alert("Please enter a description."); document.getElementById("exp-description").focus(); return; }
+  const desc     = descCheck;
+  const notes    = document.getElementById("exp-notes").value.trim();
+  const date     = document.getElementById("exp-date").value;
+  const usdTotal = getUSDAmount();
+  const splits   = calcSplits(usdTotal);
+  const whatFor  = selectedCategory ? `${selectedCategory[1]} - ${desc}` : desc;
+  const isUSD    = selectedCurrency.code === "USD";
+  const expense  = { whatFor, paidBy: selectedPayer, total: usdTotal.toFixed(2), originalAmount: !isUSD ? (selectedCurrency.symbol+total.toFixed(2)+" "+selectedCurrency.code) : null, splits, notes, date };
+
+  const btn = document.getElementById("log-btn");
+  btn.disabled = true; btn.textContent = "Logging...";
+
+  try {
+    const result = await apiGet({ action: "logExpense", sheetId: currentTrip.sheetId, participants: currentTrip.participants, expense });
+    const entry  = { id: Date.now(), rowIndex: result.rowIndex, ...expense };
+    expenseLog   = [entry, ...expenseLog].slice(0, 200);
+    localStorage.setItem("expense-log-"+currentTrip.tripId, JSON.stringify(expenseLog));
+    lastLoggedRow = { rowIndex: result.rowIndex, sheetId: currentTrip.sheetId, entryId: entry.id };
+    showToast(`✓ $${usdTotal.toFixed(2)}${!isUSD?" ("+selectedCurrency.symbol+total.toFixed(2)+" "+selectedCurrency.code+")":""} — ${selectedPayer}`);
+    updateMyTotal(); resetExpenseForm();
+  } catch(err) { alert("Error: " + err.message); }
+  finally { btn.disabled = false; btn.textContent = "Log Expense"; }
+}
+
+function resetExpenseForm() {
+  document.getElementById("exp-amount").value      = "";
+  document.getElementById("exp-description").value = "";
+  document.getElementById("exp-notes").value       = "";
+  document.getElementById("split-preview-wrap").style.display = "none";
+  document.getElementById("exp-preview").style.display        = "none";
+  document.getElementById("conversion-badge").style.display   = "none";
+  selectedCategory = null;
+  document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("selected"));
+  // Reset payer back to current user
+  const myP = currentTrip?.participants.find(p => p.email && p.email.toLowerCase() === currentUser?.email.toLowerCase());
+  selectedPayer = myP ? myP.name : currentTrip?.participants[0]?.name;
+  includedMap = {};
+  currentTrip.participants.forEach(p => { includedMap[p.name] = true; });
+  buildPayerGrid();
+  buildToggleGrid();
+}
+
+function renderLog() {
+  const list  = document.getElementById("log-list");
+  const empty = document.getElementById("log-empty");
+  if (!expenseLog.length) { empty.style.display="block"; list.innerHTML=""; return; }
+  empty.style.display = "none";
+  list.innerHTML = expenseLog.map(e => {
+    const splitPills = Object.entries(e.splits||{}).filter(([,v])=>v>0)
+      .map(([k,v]) => `<span class="split-pill">${k}: $${parseFloat(v).toFixed(2)}</span>`).join("");
+    return `<div class="log-card">
+      <div class="lc-header">
+        <div style="flex:1;min-width:0">
+          <div class="lc-what">${e.whatFor}</div>
+          <div class="lc-meta">Paid by ${e.paidBy} · ${e.date}</div>
+        </div>
+        <div>
+          <div class="lc-total">$${parseFloat(e.total).toFixed(2)}</div>
+          ${e.originalAmount?`<div class="lc-orig">${e.originalAmount}</div>`:""}
+        </div>
+      </div>
+      ${splitPills?`<div class="lc-splits">${splitPills}</div>`:""}
+    </div>`;
+  }).join("");
+}
+
+async function fetchAndUpdateTotals() {
+  if (!currentTrip) return;
+  try {
+    const result   = await apiGet({ action: "getExpenses", sheetId: currentTrip.sheetId });
+    const expenses = result.expenses || [];
+    expenseLog     = expenses.map(e => ({ ...e, id: e.rowIndex }));
+    localStorage.setItem("expense-log-" + currentTrip.tripId, JSON.stringify(expenseLog));
+    updateMyTotal();
+  } catch(e) {
+    // Silently fail — totals will still show from local cache
+  }
+}
+
+function updateMyTotal() {
+  if (!currentTrip) return;
+  const myP      = currentTrip.participants.find(p => p.email && p.email.toLowerCase() === currentUser?.email.toLowerCase());
+  const myTotal  = myP ? expenseLog.reduce((s,e) => s+(parseFloat((e.splits||{})[myP.name])||0), 0) : 0;
+  const tripTotal = expenseLog.reduce((s,e) => s+(parseFloat(e.total)||0), 0);
+  const myEl    = document.getElementById("detail-my-total");
+  const tripEl  = document.getElementById("detail-trip-total");
+  if (myEl)   myEl.textContent   = "$" + myTotal.toFixed(2);
+  if (tripEl) tripEl.textContent = "$" + tripTotal.toFixed(2);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Toast with Undo
+// ─────────────────────────────────────────────────────────────
+function showToast(msg) {
+  if (toastTimer) clearInterval(toastTimer);
+  if (toastCountdown) clearInterval(toastCountdown);
+  const toast    = document.getElementById("toast");
+  const progress = document.getElementById("toast-progress");
+  document.getElementById("toast-msg").textContent = msg;
+  document.getElementById("toast-timer").textContent = "10";
+  progress.style.transition = "none"; progress.style.width = "100%";
+  toast.classList.add("show");
+  let seconds = 10;
+  toastCountdown = setInterval(() => {
+    seconds--;
+    document.getElementById("toast-timer").textContent = seconds;
+    progress.style.transition = "width 1s linear"; progress.style.width = (seconds*10)+"%";
+    if (seconds <= 0) dismissToast();
+  }, 1000);
+}
+
+function dismissToast() {
+  clearInterval(toastCountdown);
+  document.getElementById("toast").classList.remove("show");
+  lastLoggedRow = null;
+}
+
+async function undoLastExpense() {
+  if (!lastLoggedRow) return;
+  const { rowIndex, sheetId, entryId } = lastLoggedRow;
+  dismissToast();
+  try {
+    await apiGet({ action: "deleteRow", sheetId, rowIndex });
+    expenseLog = expenseLog.filter(e => e.id !== entryId);
+    localStorage.setItem("expense-log-"+currentTrip.tripId, JSON.stringify(expenseLog));
+    renderLog(); updateMyTotal();
+  } catch(err) { alert("Could not undo: " + err.message); }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Manage Trip
+// ─────────────────────────────────────────────────────────────
+function renderManageParticipants() {
+  if (!currentTrip) return;
+  const list = document.getElementById("manage-participant-list");
+  list.innerHTML = currentTrip.participants.map(p => `
+    <div class="participant-row">
+      <div class="p-avatar">${p.name.charAt(0).toUpperCase()}</div>
+      <div class="p-info">
+        <div class="p-name">${p.name}</div>
+        <div class="p-meta">${p.travelers} traveler${p.travelers>1?"s":""} · ${p.email||"no email"}</div>
+      </div>
+    </div>`).join("");
+}
+
+function adjustManageTravelers(delta) {
+  manageTravelerCount = Math.max(1, manageTravelerCount + delta);
+  document.getElementById("manage-traveler-count").textContent = manageTravelerCount;
+}
+
+async function addParticipantToTrip() {
+  const name      = document.getElementById("manage-p-name").value.trim();
+  const email     = document.getElementById("manage-p-email").value.trim();
+  const travelers = manageTravelerCount;
+  if (!name)  { alert("Please enter a name."); return; }
+  if (!email) { alert("Please enter an email address."); return; }
+  if (currentTrip.participants.find(p => p.email.toLowerCase() === email.toLowerCase())) {
+    alert("That email is already a participant on this trip."); return;
+  }
+  const statusEl = document.getElementById("manage-status");
+  statusEl.style.display = "block"; statusEl.style.color = "var(--text3)";
+  statusEl.textContent = "⟳ Adding participant and updating sheet...";
+  const newParticipant = { name, email, travelers };
+  try {
+    const result = await apiGet({ action: "addParticipant", tripId: currentTrip.tripId, sheetId: currentTrip.sheetId, newParticipant, participants: currentTrip.participants });
+    currentTrip.participants.push(newParticipant);
+    const local = JSON.parse(localStorage.getItem("local-trips") || "[]");
+    const idx   = local.findIndex(t => t.tripId === currentTrip.tripId);
+    if (idx >= 0) { local[idx].participants = currentTrip.participants; localStorage.setItem("local-trips", JSON.stringify(local)); }
+    statusEl.style.color = "var(--green)"; statusEl.textContent = "✓ "+name+" added! Review existing expenses.";
+    document.getElementById("manage-p-name").value  = "";
+    document.getElementById("manage-p-email").value = "";
+    manageTravelerCount = 1; document.getElementById("manage-traveler-count").textContent = "1";
+    renderManageParticipants();
+    newParticipantBeingAdded = newParticipant; reviewDecisions = {};
+    launchReviewScreen(newParticipant, result.existingRows);
+  } catch(err) { statusEl.style.color = "var(--red)"; statusEl.textContent = "Error: " + err.message; }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Expense Review Screen
+// ─────────────────────────────────────────────────────────────
+function launchReviewScreen(newParticipant, existingRows) {
+  document.getElementById("review-participant-name").textContent = newParticipant.name;
+  const list = document.getElementById("review-expense-list");
+  if (!existingRows || existingRows.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="es-icon">🎉</div><div class="es-title">No existing expenses</div><div class="es-sub">All future expenses can include ${newParticipant.name}.</div></div>`;
+    document.getElementById("review-save-btn").style.display = "none";
+  } else {
+    document.getElementById("review-save-btn").style.display = "block";
+    existingRows.forEach(row => { reviewDecisions[row.rowIndex] = false; });
+    list.innerHTML = existingRows.map(row => `
+      <div class="review-card" id="rcard-${row.rowIndex}">
+        <div class="rc-header">
+          <div style="flex:1;min-width:0">
+            <div class="rc-what">${row.whatFor}</div>
+            <div class="rc-meta">Paid by ${row.paidBy}</div>
+          </div>
+          <div class="rc-total">$${parseFloat(row.total).toFixed(2)}</div>
+        </div>
+        <div class="rc-toggle">
+          <button class="rc-toggle-btn active-exclude" id="rbtn-excl-${row.rowIndex}" onclick="setReviewDecision(${row.rowIndex},false)">✕ Exclude ${newParticipant.name}</button>
+          <button class="rc-toggle-btn" id="rbtn-incl-${row.rowIndex}" onclick="setReviewDecision(${row.rowIndex},true)">✓ Include ${newParticipant.name}</button>
+          <span class="rc-share" id="rshare-${row.rowIndex}">$0.00</span>
+        </div>
+      </div>`).join("");
+    window._reviewRows = existingRows;
+  }
+  showScreen("screen-review");
+}
+
+function setReviewDecision(rowIndex, include) {
+  reviewDecisions[rowIndex] = include;
+  const card    = document.getElementById("rcard-"+rowIndex);
+  const btnIncl = document.getElementById("rbtn-incl-"+rowIndex);
+  const btnExcl = document.getElementById("rbtn-excl-"+rowIndex);
+  const share   = document.getElementById("rshare-"+rowIndex);
+  card.classList.toggle("included", include);
+  btnIncl.className = "rc-toggle-btn" + (include ? " active-include" : "");
+  btnExcl.className = "rc-toggle-btn" + (!include ? " active-exclude" : "");
+  if (include) {
+    const row            = (window._reviewRows||[]).find(r => r.rowIndex===rowIndex);
+    const totalTravelers = currentTrip.participants.reduce((s,p) => s+p.travelers, 0);
+    const newShare       = Math.round(parseFloat(row.total)*newParticipantBeingAdded.travelers/totalTravelers*100)/100;
+    share.textContent    = "$"+newShare.toFixed(2);
+  } else { share.textContent = "$0.00"; }
+}
+
+async function saveReviewChanges() {
+  const rows     = window._reviewRows || [];
+  const toUpdate = rows.filter(r => reviewDecisions[r.rowIndex] === true);
+  if (!toUpdate.length) { showScreen("screen-trip-detail"); return; }
+  const btn      = document.getElementById("review-save-btn");
+  const statusEl = document.getElementById("review-status");
+  btn.disabled = true; btn.textContent = "Saving...";
+  statusEl.style.display = "block"; statusEl.textContent = "Updating "+toUpdate.length+" expense(s)...";
+  try {
+    await apiGet({ action: "updateExpensesForNewParticipant", sheetId: currentTrip.sheetId, participants: currentTrip.participants, newParticipant: newParticipantBeingAdded, rowsToUpdate: toUpdate.map(r => r.rowIndex) });
+    statusEl.style.color = "var(--green)"; statusEl.textContent = "✓ "+toUpdate.length+" expense(s) updated!";
+    setTimeout(() => showScreen("screen-trip-detail"), 1200);
+  } catch(err) {
+    statusEl.style.color = "var(--red)"; statusEl.textContent = "Error: " + err.message;
+    btn.disabled = false; btn.textContent = "Save Changes";
+  }
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// Live Log (reads from sheet)
+// ─────────────────────────────────────────────────────────────
+async function loadAndRenderLog() {
+  const list  = document.getElementById("log-list");
+  const empty = document.getElementById("log-empty");
+  if (!currentTrip) return;
+
+  // Show loading
+  empty.style.display = "none";
+  list.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--text3)"><span class="spin" style="font-size:24px">⟳</span><div style="margin-top:8px;font-size:13px">Loading expenses...</div></div>`;
+
+  try {
+    const result = await apiGet({ action: "getExpenses", sheetId: currentTrip.sheetId });
+    const expenses = result.expenses || [];
+
+    // Update local cache for active trips
+    if (!currentTrip.archived) {
+      expenseLog = expenses.map(e => ({ ...e, id: e.rowIndex }));
+      localStorage.setItem("expense-log-" + currentTrip.tripId, JSON.stringify(expenseLog));
+    }
+
+    if (!expenses.length) {
+      empty.style.display = "block"; list.innerHTML = ""; return;
+    }
+
+    list.innerHTML = expenses.map(e => {
+      const splitPills = Object.entries(e.splits||{}).filter(([,v])=>parseFloat(v)>0)
+        .map(([k,v]) => `<span class="split-pill">${k}: $${parseFloat(v).toFixed(2)}</span>`).join("");
+      return `<div class="log-card">
+        <div class="lc-header">
+          <div style="flex:1;min-width:0">
+            <div class="lc-what">${e.whatFor}</div>
+            <div class="lc-meta">Paid by ${e.paidBy}</div>
+          </div>
+          <div>
+            <div class="lc-total">$${parseFloat(e.total).toFixed(2)}</div>
+          </div>
+        </div>
+        ${splitPills?`<div class="lc-splits">${splitPills}</div>`:""}
+      </div>`;
+    }).join("");
+
+    // Update expenseLog so updateMyTotal has current data
+    expenseLog = expenses.map(e => ({ ...e, id: e.rowIndex }));
+    updateMyTotal();
+  } catch(err) {
+    list.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--red);font-size:13px">Could not load expenses: ${err.message}</div>`;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Settle Summary
+// ─────────────────────────────────────────────────────────────
+async function loadSettleSummary() {
+  const summaryEl       = document.getElementById("settle-summary");
+  const archiveSection  = document.getElementById("manage-archive-section");
+  const archiveDivider  = document.getElementById("manage-archive-divider");
+  const addSection      = document.getElementById("manage-add-participant-section");
+  const archiveBtn      = document.getElementById("archive-btn");
+  if (!summaryEl || !currentTrip) return;
+
+  // Hide archive section for archived trips, show read-only note instead
+  if (currentTrip.archived) {
+    if (archiveSection) archiveSection.style.display = "none";
+    if (archiveDivider) archiveDivider.style.display = "none";
+    if (addSection) addSection.style.display = "none";
+    return;
+  }
+
+  summaryEl.innerHTML = `<div style="font-size:12px;color:var(--text3)"><span class="spin">⟳</span> Calculating settlement...</div>`;
+
+  try {
+    const result   = await apiGet({ action: "getExpenses", sheetId: currentTrip.sheetId });
+    const expenses = result.expenses || [];
+
+    if (!expenses.length) {
+      summaryEl.innerHTML = `<div style="font-size:13px;color:var(--text3)">No expenses yet.</div>`;
+      return;
+    }
+
+    // Calculate balances client-side using same debt simplification logic
+    const balances = {};
+    currentTrip.participants.forEach(p => { balances[p.name] = 0; });
+
+    expenses.forEach(exp => {
+      if (balances[exp.paidBy] !== undefined) balances[exp.paidBy] += parseFloat(exp.total)||0;
+      Object.entries(exp.splits||{}).forEach(([name,amt]) => {
+        if (balances[name] !== undefined) balances[name] -= parseFloat(amt)||0;
+      });
+    });
+
+    // Debt simplification
+    const creditors = [], debtors = [];
+    Object.entries(balances).forEach(([name,bal]) => {
+      const r = Math.round(bal*100)/100;
+      if (r > 0.01)  creditors.push({ name, amount: r });
+      if (r < -0.01) debtors.push({ name, amount: -r });
+    });
+    creditors.sort((a,b) => b.amount-a.amount);
+    debtors.sort((a,b) => b.amount-a.amount);
+
+    const payments = [];
+    let ci=0, di=0;
+    while (ci<creditors.length && di<debtors.length) {
+      const credit=creditors[ci], debt=debtors[di];
+      const amount = Math.round(Math.min(credit.amount,debt.amount)*100)/100;
+      if (amount>0.01) payments.push({ from:debt.name, to:credit.name, amount });
+      credit.amount-=amount; debt.amount-=amount;
+      if (credit.amount<0.01) ci++;
+      if (debt.amount<0.01) di++;
+    }
+
+    if (!payments.length) {
+      summaryEl.innerHTML = `<div class="success-box">✓ All settled! No payments needed.</div>`;
+      if (archiveBtn) archiveBtn.textContent = "Archive Trip";
+      return;
+    }
+
+    summaryEl.innerHTML = payments.map(p =>
+      `<div class="card card-pad" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text)">${p.from} → ${p.to}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">Venmo payment</div>
+        </div>
+        <div style="font-size:18px;font-weight:700;color:var(--amber)">$${p.amount.toFixed(2)}</div>
+      </div>`
+    ).join("");
+
+  } catch(err) {
+    summaryEl.innerHTML = `<div style="font-size:13px;color:var(--red)">Could not load settlement: ${err.message}</div>`;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Archive Trip
+// ─────────────────────────────────────────────────────────────
+async function confirmArchive() {
+  if (!currentTrip) return;
+  const confirmed = confirm("Archive \"" + currentTrip.tripName + "\"?\n\nThis will mark the trip as settled and make it read-only for all travelers. Make sure everyone has sent their Venmo payments first.");
+  if (!confirmed) return;
+
+  const btn      = document.getElementById("archive-btn");
+  const statusEl = document.getElementById("archive-status");
+  btn.disabled = true; btn.textContent = "Archiving...";
+  statusEl.style.display = "block"; statusEl.style.color = "var(--text3)";
+  statusEl.textContent = "Archiving trip...";
+
+  try {
+    await apiGet({ action: "archiveTrip", tripId: currentTrip.tripId });
+
+    // Update local cache
+    currentTrip.archived = true;
+    const local = JSON.parse(localStorage.getItem("local-trips") || "[]");
+    const idx   = local.findIndex(t => t.tripId === currentTrip.tripId);
+    if (idx >= 0) { local[idx].archived = true; localStorage.setItem("local-trips", JSON.stringify(local)); }
+    const serverIdx = allTrips.findIndex(t => t.tripId === currentTrip.tripId);
+    if (serverIdx >= 0) allTrips[serverIdx].archived = true;
+
+    statusEl.style.color = "var(--green)"; statusEl.textContent = "✓ Trip archived!";
+    setTimeout(() => loadTripsScreen(), 1500);
+  } catch(err) {
+    statusEl.style.color = "var(--red)"; statusEl.textContent = "Error: " + err.message;
+    btn.disabled = false; btn.textContent = "Settle Up & Archive Trip";
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Delete (local only)
+// ─────────────────────────────────────────────────────────────
+function deleteLocalTrip() {
+  if (!currentTrip) return;
+  const confirmed = confirm("Remove \"" + currentTrip.tripName + "\" from your app?\n\nThis only removes it from your device. The Google Sheet and other travelers are unaffected.");
+  if (!confirmed) return;
+
+  const tripId = currentTrip.tripId;
+
+  // Remove from local-trips cache
+  const local    = JSON.parse(localStorage.getItem("local-trips") || "[]");
+  const filtered = local.filter(t => t.tripId !== tripId);
+  localStorage.setItem("local-trips", JSON.stringify(filtered));
+  localStorage.removeItem("expense-log-" + tripId);
+
+  // Persist a "deleted trips" list so server-fetched trips stay hidden
+  const deleted = JSON.parse(localStorage.getItem("deleted-trips") || "[]");
+  if (!deleted.includes(tripId)) deleted.push(tripId);
+  localStorage.setItem("deleted-trips", JSON.stringify(deleted));
+
+  // Remove from allTrips in memory
+  allTrips    = allTrips.filter(t => t.tripId !== tripId);
+  currentTrip = null;
+
+  loadTripsScreen();
+}
+
+// ─────────────────────────────────────────────────────────────
+// Import Existing Trip
+// ─────────────────────────────────────────────────────────────
+let importTripParticipants = [];
+let importSheetId          = "";
+
+function showImportTrip() {
+  resetImport();
+  showScreen("screen-import-trip");
+}
+
+function resetImport() {
+  importTripParticipants = []; importSheetId = "";
+  const urlInput = document.getElementById("import-sheet-url");
+  if (urlInput) urlInput.value = "";
+  document.getElementById("import-step-1").style.display = "flex";
+  document.getElementById("import-step-2").style.display = "none";
+  document.getElementById("import-preview-status").style.display = "none";
+  const statusEl = document.getElementById("import-trip-status");
+  if (statusEl) statusEl.style.display = "none";
+}
+
+function extractSheetId(url) {
+  // Handle full URLs like https://docs.google.com/spreadsheets/d/SHEET_ID/edit
+  const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+}
+
+async function previewImportSheet() {
+  const url      = document.getElementById("import-sheet-url").value.trim();
+  const sheetId  = extractSheetId(url);
+  const statusEl = document.getElementById("import-preview-status");
+  const btn      = document.getElementById("import-preview-btn");
+
+  if (!url) { alert("Please paste a Google Sheet link."); return; }
+  if (!sheetId) { alert("Could not find a Sheet ID in that link. Make sure you copy the full URL from your browser."); return; }
+
+  btn.disabled = true; btn.textContent = "Reading sheet...";
+  statusEl.style.display = "block"; statusEl.style.color = "var(--text3)";
+  statusEl.textContent = "Reading your sheet...";
+
+  try {
+    // Pass known emails so the script can pre-fill them
+    const knownEmails = { userEmail: currentUser.email };
+    const result = await apiGet({ action: "previewImport", sheetId, userEmail: currentUser.email });
+
+    // After getting participants back, also auto-fill any emails we already know
+    // Current user's email
+    result.participants.forEach(p => {
+      if (!p.email && currentUser.email) {
+        const prefix = currentUser.email.split("@")[0].toLowerCase();
+        const name   = p.name.toLowerCase();
+        if (prefix.indexOf(name.split(" ")[0]) >= 0 || name.indexOf(prefix) >= 0) {
+          p.email = currentUser.email;
+        }
+      }
+    });
+    importSheetId          = sheetId;
+    importTripParticipants = result.participants;
+
+    // Fill in trip name
+    document.getElementById("import-trip-name").value = result.tripName;
+
+    // Render participant list with email inputs
+    renderImportConfirmList();
+
+    // Show step 2
+    document.getElementById("import-step-1").style.display = "none";
+    document.getElementById("import-step-2").style.display = "flex";
+
+  } catch(err) {
+    statusEl.style.color = "var(--red)";
+    statusEl.textContent = "Error: " + err.message;
+  } finally {
+    btn.disabled = false; btn.textContent = "Read Sheet →";
+  }
+}
+
+function renderImportConfirmList() {
+  const list    = document.getElementById("import-participant-list");
+  const myEmail = currentUser ? currentUser.email : "";
+  list.innerHTML = importTripParticipants.map((p, i) => `
+    <div class="card card-pad" style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="p-avatar">${p.name.charAt(0).toUpperCase()}</div>
+        <div style="flex:1;min-width:0">
+          <div class="p-name">${p.name}</div>
+          <div class="p-meta">${p.travelers} traveler${p.travelers>1?"s":""}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <button class="stepper-btn" style="padding:4px 10px" onclick="adjustImportPTravelers(${i},-1)">−</button>
+          <span style="font-size:14px;font-weight:700;min-width:20px;text-align:center" id="ipt-${i}">${p.travelers}</span>
+          <button class="stepper-btn" style="padding:4px 10px" onclick="adjustImportPTravelers(${i},1)">+</button>
+        </div>
+      </div>
+      <input type="email" class="text-input" placeholder="Email address"
+             id="import-email-${i}"
+             value="${p.email||""}"
+             oninput="importTripParticipants[${i}].email=this.value"
+             style="font-size:13px;padding:9px 12px"/>
+      ${myEmail && !p.email ? `<button onclick="importTripParticipants[${i}].email='${myEmail}';document.getElementById('import-email-${i}').value='${myEmail}';this.style.display='none'" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;font-size:11px;font-weight:600;color:var(--navy);cursor:pointer;text-align:left">
+        Use my email: ${myEmail}
+      </button>` : ""}
+    </div>`).join("");
+}
+
+function adjustImportPTravelers(i, delta) {
+  importTripParticipants[i].travelers = Math.max(1, (importTripParticipants[i].travelers||1) + delta);
+  document.getElementById("ipt-"+i).textContent = importTripParticipants[i].travelers;
+}
+
+async function confirmImport() {
+  const tripName = document.getElementById("import-trip-name").value.trim();
+  if (!tripName)         { alert("Please enter a trip name."); return; }
+  if (!importSheetId)    { alert("No sheet ID found. Please start over."); return; }
+
+  // Remind user to add their own email if not yet filled in
+  const userInList = importTripParticipants.some(p => p.email && p.email.toLowerCase() === currentUser.email.toLowerCase());
+  if (!userInList) {
+    const confirmed = confirm("Your email (" + currentUser.email + ") isn't assigned to any participant yet. You won't see this trip in your app unless you add it.\n\nContinue anyway?");
+    if (!confirmed) return;
+  }
+
+  const btn      = document.getElementById("import-trip-btn");
+  const statusEl = document.getElementById("import-trip-status");
+  btn.disabled = true; btn.textContent = "Importing...";
+  statusEl.style.display = "block"; statusEl.style.color = "var(--text3)";
+  statusEl.textContent   = "Registering trip...";
+
+  try {
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/" + importSheetId + "/edit";
+    const result   = await apiGet({ action: "importTrip", tripName, sheetId: importSheetId, sheetUrl, participants: importTripParticipants });
+
+    const local = JSON.parse(localStorage.getItem("local-trips") || "[]");
+    local.push({ tripId: result.tripId, tripName: result.tripName, sheetId: result.sheetId, sheetUrl: result.sheetUrl, createdAt: result.createdAt, participants: result.participants });
+    localStorage.setItem("local-trips", JSON.stringify(local));
+
+    statusEl.style.color = "var(--green)"; statusEl.textContent = "✓ Imported successfully!";
+    await loadTripsScreen();
+  } catch(err) {
+    statusEl.style.color = "var(--red)"; statusEl.textContent = "Error: " + err.message;
+  } finally {
+    btn.disabled = false; btn.textContent = "Import Trip";
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Currency// ─────────────────────────────────────────────────────────────
+// Currency
+// ─────────────────────────────────────────────────────────────
+function buildCurrencyBar() {
+  const bar = document.getElementById("currency-bar");
+  if (!bar) return;
+  bar.innerHTML = CURRENCIES.map(c => `
+    <button class="currency-btn ${c.code===selectedCurrency.code?"selected":""}" id="curr-${c.code}" onclick="selectCurrency('${c.code}')">
+      ${c.flag} ${c.code}
+    </button>`).join("");
+}
+
+async function selectCurrency(code) {
+  selectedCurrency = CURRENCIES.find(c => c.code===code) || CURRENCIES[0];
+  document.querySelectorAll(".currency-btn").forEach(b => b.classList.remove("selected"));
+  document.getElementById("curr-"+code)?.classList.add("selected");
+  document.getElementById("currency-symbol").textContent = selectedCurrency.symbol;
+  document.getElementById("currency-label-hint").textContent = code !== "USD" ? "(in "+code+")" : "";
+  // Persist currency selection for this trip
+  if (currentTrip) localStorage.setItem("trip-currency-" + currentTrip.tripId, code);
+  if (code === "USD") { exchangeRate=1.0; rateLoading=false; onAmountChange(); }
+  else { rateLoading=true; exchangeRate=null; showConversionLoading(); await fetchRate(code); rateLoading=false; onAmountChange(); }
+}
+
+async function fetchRate(code) {
+  const cached = rateCache[code];
+  if (cached && Date.now()-cached.ts < 3600000) { exchangeRate=cached.rate; return; }
+  const apis = [
+    async () => { const r=await fetch("https://api.frankfurter.app/latest?from="+code+"&to=USD"); const d=await r.json(); if(!d.rates?.USD) throw 0; return d.rates.USD; },
+    async () => { const r=await fetch("https://open.er-api.com/v6/latest/"+code); const d=await r.json(); if(!d.rates?.USD) throw 0; return d.rates.USD; },
+    async () => { const r=await fetch("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/"+code.toLowerCase()+".json"); const d=await r.json(); const rate=d[code.toLowerCase()]?.usd; if(!rate) throw 0; return rate; },
+  ];
+  for (const api of apis) {
+    try { const rate=await api(); exchangeRate=rate; rateCache[code]={rate,ts:Date.now()}; return; } catch(e) { continue; }
+  }
+  exchangeRate=null;
+  const badge=document.getElementById("conversion-badge");
+  if (badge) { badge.style.display="flex"; document.getElementById("conv-original").textContent=selectedCurrency.symbol+" "+code; document.getElementById("conv-usd").textContent="Rate unavailable"; document.getElementById("conv-rate").textContent="Check connection"; }
+}
+
+function showConversionLoading() {
+  const amount=parseFloat(document.getElementById("exp-amount").value)||0;
+  const badge=document.getElementById("conversion-badge");
+  if (amount<=0||selectedCurrency.code==="USD") { badge.style.display="none"; return; }
+  badge.style.display="flex";
+  document.getElementById("conv-original").textContent=selectedCurrency.symbol+amount.toFixed(2)+" "+selectedCurrency.code;
+  document.getElementById("conv-usd").textContent="fetching rate...";
+  document.getElementById("conv-rate").textContent="";
+}
+
+function updateConversionBadge() {
+  const amount=parseFloat(document.getElementById("exp-amount").value)||0;
+  const badge=document.getElementById("conversion-badge");
+  if (amount<=0||selectedCurrency.code==="USD") { badge.style.display="none"; return; }
+  if (rateLoading||exchangeRate===null) { showConversionLoading(); return; }
+  const usd=amount*exchangeRate;
+  badge.style.display="flex";
+  document.getElementById("conv-original").textContent=selectedCurrency.symbol+amount.toFixed(2)+" "+selectedCurrency.code;
+  document.getElementById("conv-usd").textContent="$"+usd.toFixed(2)+" USD";
+  document.getElementById("conv-rate").textContent="1 "+selectedCurrency.code+" = $"+exchangeRate.toFixed(4);
+}
+
+async function detectAndSetCurrency() {
+  buildCurrencyBar();
+  try { const r=await fetch("https://ipapi.co/json/"); const d=await r.json(); const code=COUNTRY_CURRENCY[d.country_code]; if(code&&code!=="USD"){selectCurrency(code);return;} } catch(e){}
+  selectCurrency("USD");
+}
+
+function getUSDAmount() {
+  const raw=parseFloat(document.getElementById("exp-amount").value)||0;
+  if (selectedCurrency.code==="USD") return raw;
+  return Math.round(raw*(exchangeRate||1)*100)/100;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Nav helpers
+// ─────────────────────────────────────────────────────────────
+function updateNavActive(tab) {
+  ['trips','log','manage','settings'].forEach(t => {
+    document.getElementById('nav-' + t)?.classList.toggle('active', t === tab);
+  });
+  document.getElementById('nav-add-label')?.classList.toggle('active', tab === 'add');
+}
+
+// ─────────────────────────────────────────────────────────────
+// API
+// ─────────────────────────────────────────────────────────────
+async function apiGet(payload) {
+  if (MASTER_SCRIPT_URL==="PASTE_YOUR_MASTER_SCRIPT_URL_HERE") throw new Error("Script URL not configured.");
+  const url=MASTER_SCRIPT_URL+"?payload="+encodeURIComponent(JSON.stringify(payload));
+  const res=await fetch(url);
+  const data=await res.json();
+  if (data.status==="error") throw new Error(data.message);
+  return data;
+}
+
+async function apiPost(payload) { return apiGet(payload); }
+</script>
+</body>
+</html>
