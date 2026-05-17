@@ -448,8 +448,11 @@
 
     <!-- Summary card -->
     <div style="padding:14px 16px 0">
-      <div class="summary-card">
-        <div class="sc-trip" id="sc-trip-name">Trip</div>
+      <div class="summary-card" onclick="showExpenseChart()" style="cursor:pointer">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div class="sc-trip" id="sc-trip-name">Trip</div>
+          <span style="font-size:11px;color:rgba(255,255,255,0.5);font-weight:500">Tap for breakdown ›</span>
+        </div>
         <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px">
           <div>
             <div class="sc-label">Total Expensed</div>
@@ -502,8 +505,20 @@
         </div>
 
         <div class="card card-pad" id="split-preview-wrap" style="display:none">
-          <label class="field-label">Split Preview</label>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <label class="field-label" style="margin-bottom:0">Split Preview</label>
+            <button id="edit-splits-toggle-btn" onclick="toggleManualSplits()" style="background:var(--surface2);border:1px solid var(--border2);border-radius:100px;padding:4px 12px;font-size:11px;font-weight:600;color:var(--navy);cursor:pointer">Edit Splits</button>
+          </div>
           <div class="split-grid" id="split-grid"></div>
+          <!-- Manual split editor (hidden by default) -->
+          <div id="manual-splits-editor" style="display:none;flex-direction:column;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+            <div id="manual-splits-grid" style="display:flex;flex-direction:column;gap:8px"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
+              <span style="font-size:12px;color:var(--text3)">Remaining to allocate:</span>
+              <span id="manual-splits-remaining" style="font-size:14px;font-weight:700;color:var(--green)">$0.00</span>
+            </div>
+            <button onclick="resetToAutoSplit()" style="background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px;font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;width:100%">↺ Reset to Auto Split</button>
+          </div>
         </div>
 
         <div class="card card-pad" style="display:flex;flex-direction:column;gap:12px">
@@ -659,6 +674,77 @@
         <div id="import-trip-status" style="display:none;font-size:13px;text-align:center;color:var(--text3);padding:4px 0"></div>
       </div>
 
+    </div>
+  </div>
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: Expense Breakdown Chart                           -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="screen-chart" class="screen no-nav">
+    <div class="top-header">
+      <div class="back-row"><button class="back-btn" onclick="showScreen('screen-trip-detail');showDetailPanel('add')">Back</button></div>
+      <div class="eyebrow" id="chart-trip-name">Trip</div>
+      <div class="page-title">Expense Breakdown</div>
+    </div>
+    <div class="screen-body" style="align-items:center">
+      <div id="chart-container" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:20px">
+        <svg id="pie-chart" viewBox="0 0 200 200" style="width:200px;height:200px"></svg>
+        <div id="chart-legend" style="width:100%;display:flex;flex-direction:column;gap:10px"></div>
+        <div class="card card-pad" style="width:100%">
+          <div class="preview-title">Trip Summary</div>
+          <div class="preview-row"><span class="pr-label">Total Expensed</span><span class="pr-val" id="chart-total">$0.00</span></div>
+          <div id="chart-breakdown"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: Edit Expense                                      -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="screen-edit-expense" class="screen no-nav">
+    <div class="top-header">
+      <div class="back-row"><button class="back-btn" onclick="showScreen('screen-trip-detail');showDetailPanel('log')">Cancel</button></div>
+      <div class="eyebrow">Edit</div>
+      <div class="page-title">Edit Expense</div>
+    </div>
+    <div class="screen-body">
+      <div class="card card-pad" style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label class="field-label">Description<span class="field-required">*</span></label>
+          <input type="text" class="text-input" id="edit-description" placeholder="e.g. Dinner at La Piazza"/>
+        </div>
+        <div>
+          <label class="field-label">Who Paid</label>
+          <div class="pill-grid" id="edit-payer-grid"></div>
+        </div>
+        <div>
+          <label class="field-label">Total Amount (USD)<span class="field-required">*</span></label>
+          <div class="amount-wrap">
+            <span class="amount-symbol">$</span>
+            <input type="number" inputmode="decimal" placeholder="0.00" class="amount-input" id="edit-amount" oninput="onEditAmountChange()" style="font-size:22px"/>
+          </div>
+        </div>
+        <div>
+          <label class="field-label">Notes<span class="field-optional">(optional)</span></label>
+          <input type="text" class="text-input" id="edit-notes" placeholder="Any extra details..."/>
+        </div>
+      </div>
+
+      <!-- Edit splits -->
+      <div class="card card-pad" style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <label class="field-label" style="margin-bottom:0">Splits</label>
+          <span id="edit-split-status" style="font-size:12px;font-weight:600;color:var(--green)">✓ Balanced</span>
+        </div>
+        <div id="edit-splits-grid" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div style="font-size:11px;color:var(--text3);line-height:1.5">
+          Editing one amount redistributes the remainder proportionally among others.
+        </div>
+      </div>
+
+      <button class="btn-primary" id="edit-save-btn" onclick="saveEditedExpense()">Save Changes</button>
+      <div id="edit-status" style="display:none;font-size:13px;text-align:center;color:var(--text3);padding:4px 0"></div>
     </div>
   </div>
 
@@ -1072,8 +1158,16 @@ function selectCategory(i) {
   updatePreview();
 }
 
+// Safe parser for monetary values from any source
+function parseMoney(val) {
+  if (val === null || val === undefined || val === "") return 0;
+  return parseFloat(val.toString().replace(/[$,]/g, "")) || 0;
+}
+
 function calcSplits(total) {
   if (!currentTrip) return {};
+  // If manual splits are active, use those
+  if (manualSplitsActive && Object.keys(manualSplits).length > 0) return { ...manualSplits };
   const included       = currentTrip.participants.filter(p => includedMap[p.name]);
   const totalTravelers = included.reduce((s,p) => s+p.travelers, 0);
   if (!totalTravelers) return {};
@@ -1180,6 +1274,12 @@ function resetExpenseForm() {
   document.getElementById("conversion-badge").style.display   = "none";
   selectedCategory = null;
   document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("selected"));
+  // Reset manual splits
+  manualSplitsActive = false; manualSplits = {};
+  const msEditor = document.getElementById("manual-splits-editor");
+  if (msEditor) msEditor.style.display = "none";
+  const msBtn = document.getElementById("edit-splits-toggle-btn");
+  if (msBtn) { msBtn.textContent = "Edit Splits"; msBtn.style.background = "var(--surface2)"; msBtn.style.color = "var(--navy)"; }
   // Reset payer back to current user
   const myP = currentTrip?.participants.find(p => p.email && p.email.toLowerCase() === currentUser?.email.toLowerCase());
   selectedPayer = myP ? myP.name : currentTrip?.participants[0]?.name;
@@ -1229,8 +1329,8 @@ async function fetchAndUpdateTotals() {
 function updateMyTotal() {
   if (!currentTrip) return;
   const myP      = currentTrip.participants.find(p => p.email && p.email.toLowerCase() === currentUser?.email.toLowerCase());
-  const myTotal  = myP ? expenseLog.reduce((s,e) => s+(parseFloat((e.splits||{})[myP.name])||0), 0) : 0;
-  const tripTotal = expenseLog.reduce((s,e) => s+(parseFloat(e.total)||0), 0);
+  const myTotal  = myP ? expenseLog.reduce((s,e) => s+parseMoney((e.splits||{})[myP.name]), 0) : 0;
+  const tripTotal = expenseLog.reduce((s,e) => s+parseMoney(e.total), 0);
   const myEl    = document.getElementById("detail-my-total");
   const tripEl  = document.getElementById("detail-trip-total");
   if (myEl)   myEl.textContent   = "$" + myTotal.toFixed(2);
@@ -1420,17 +1520,25 @@ async function loadAndRenderLog() {
       empty.style.display = "block"; list.innerHTML = ""; return;
     }
 
-    list.innerHTML = expenses.map(e => {
-      const splitPills = Object.entries(e.splits||{}).filter(([,v])=>parseFloat(v)>0)
-        .map(([k,v]) => `<span class="split-pill">${k}: $${parseFloat(v).toFixed(2)}</span>`).join("");
+    // Feature 2: Sort newest first (reverse sheet order)
+    const sorted = [...expenses].reverse();
+    const isArchived = currentTrip?.archived;
+
+    list.innerHTML = sorted.map(e => {
+      const splitPills = Object.entries(e.splits||{}).filter(([,v])=>parseMoney(v)>0)
+        .map(([k,v]) => `<span class="split-pill">${k}: $${parseMoney(v).toFixed(2)}</span>`).join("");
+      const editBtn = !isArchived
+        ? `<button onclick="openEditExpense(${e.rowIndex})" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 10px;font-size:11px;font-weight:600;color:var(--navy);cursor:pointer;white-space:nowrap;margin-top:6px">Edit</button>`
+        : "";
       return `<div class="log-card">
         <div class="lc-header">
           <div style="flex:1;min-width:0">
             <div class="lc-what">${e.whatFor}</div>
             <div class="lc-meta">Paid by ${e.paidBy}</div>
           </div>
-          <div>
+          <div style="text-align:right">
             <div class="lc-total">$${parseFloat(e.total).toFixed(2)}</div>
+            ${editBtn}
           </div>
         </div>
         ${splitPills?`<div class="lc-splits">${splitPills}</div>`:""}
@@ -1480,9 +1588,9 @@ async function loadSettleSummary() {
     currentTrip.participants.forEach(p => { balances[p.name] = 0; });
 
     expenses.forEach(exp => {
-      if (balances[exp.paidBy] !== undefined) balances[exp.paidBy] += parseFloat(exp.total)||0;
+      if (balances[exp.paidBy] !== undefined) balances[exp.paidBy] += parseMoney(exp.total);
       Object.entries(exp.splits||{}).forEach(([name,amt]) => {
-        if (balances[name] !== undefined) balances[name] -= parseFloat(amt)||0;
+        if (balances[name] !== undefined) balances[name] -= parseMoney(amt);
       });
     });
 
@@ -1587,6 +1695,395 @@ function deleteLocalTrip() {
   currentTrip = null;
 
   loadTripsScreen();
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// FEATURE 1: Expense Breakdown Pie Chart
+// ─────────────────────────────────────────────────────────────
+const CHART_COLORS = ['#1E2D4A','#C47A2E','#2E7D52','#7B4F9E','#C0392B','#1A6B8A','#7D6608'];
+
+async function showExpenseChart() {
+  if (!currentTrip) return;
+
+  showScreen("screen-chart");
+  document.getElementById("chart-trip-name").textContent = currentTrip.tripName;
+  document.getElementById("pie-chart").innerHTML = '<text x="100" y="105" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#8A857A">Loading...</text>';
+  document.getElementById("chart-legend").innerHTML = "";
+  document.getElementById("chart-breakdown").innerHTML = "";
+
+  // Always fetch fresh data so values are correct
+  try {
+    const result = await apiGet({ action: "getExpenses", sheetId: currentTrip.sheetId });
+    expenseLog = (result.expenses || []).map(e => ({ ...e, id: e.rowIndex }));
+    localStorage.setItem("expense-log-" + currentTrip.tripId, JSON.stringify(expenseLog));
+    // Debug: log split keys from first few expenses
+    console.log("[Chart] Participants:", currentTrip.participants.map(p=>p.name));
+    console.log("[Chart] Sample splits:", expenseLog.slice(0,3).map(e=>Object.keys(e.splits||{})));
+    updateMyTotal();
+  } catch(err) {
+    document.getElementById("pie-chart").innerHTML = `<text x="100" y="105" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#C0392B">Could not load data</text>`;
+    return;
+  }
+
+  if (!expenseLog.length) {
+    document.getElementById("pie-chart").innerHTML = `<text x="100" y="105" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#8A857A">No expenses yet</text>`;
+    return;
+  }
+
+  // Calculate each participant's total portion
+  // Step 1: seed with participant names (canonical)
+  const portions = {};
+  currentTrip.participants.forEach(p => { portions[p.name] = 0; });
+
+  // Step 2: build a case-insensitive lookup from any split key → canonical name
+  const canonicalName = {};
+  currentTrip.participants.forEach(p => {
+    canonicalName[p.name.toLowerCase().trim()] = p.name;
+  });
+
+  expenseLog.forEach(e => {
+    const splitEntries = Object.entries(e.splits || {});
+    if (splitEntries.length > 0) {
+      // Use split data when available
+      splitEntries.forEach(([name, amt]) => {
+        const key = name.toLowerCase().trim();
+        // Try exact canonical match first, then fuzzy (startsWith)
+        const canon = canonicalName[key]
+          || Object.keys(canonicalName).find(k => k.startsWith(key) || key.startsWith(k))
+              && canonicalName[Object.keys(canonicalName).find(k => k.startsWith(key) || key.startsWith(k))];
+        if (canon) {
+          portions[canon] += parseMoney(amt);
+        } else if (portions[name] !== undefined) {
+          portions[name] += parseMoney(amt);
+        } else {
+          // Unknown participant in splits — add them so nothing is lost
+          portions[name] = (portions[name] || 0) + parseMoney(amt);
+        }
+      });
+    } else {
+      // No split data — fall back to traveler-ratio split of the total
+      const total = parseMoney(e.total);
+      const totalTravelers = currentTrip.participants.reduce((s, p) => s + (p.travelers || 1), 0);
+      currentTrip.participants.forEach(p => {
+        portions[p.name] += Math.round(total * (p.travelers || 1) / totalTravelers * 100) / 100;
+      });
+    }
+  });
+
+  const tripTotal = expenseLog.reduce((s,e) => s + parseMoney(e.total), 0);
+  document.getElementById("chart-total").textContent = "$" + tripTotal.toFixed(2);
+
+  // Build pie chart SVG
+  const cx = 100, cy = 100, r = 90;
+  let startAngle = -Math.PI / 2;
+  const names = Object.keys(portions).filter(n => portions[n] > 0);
+  let svgPaths = '';
+
+  names.forEach((name, i) => {
+    const slice    = portions[name] / tripTotal;
+    const endAngle = startAngle + slice * 2 * Math.PI;
+    const x1 = cx + r * Math.cos(startAngle);
+    const y1 = cy + r * Math.sin(startAngle);
+    const x2 = cx + r * Math.cos(endAngle);
+    const y2 = cy + r * Math.sin(endAngle);
+    const large = slice > 0.5 ? 1 : 0;
+    const color  = CHART_COLORS[i % CHART_COLORS.length];
+    svgPaths += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z" fill="${color}" stroke="#fff" stroke-width="2"/>`;
+    startAngle = endAngle;
+  });
+
+  // Center total text
+  svgPaths += `<text x="100" y="96" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" fill="#1A1814" font-weight="700">$${tripTotal.toFixed(0)}</text>`;
+  svgPaths += `<text x="100" y="112" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#8A857A">TOTAL</text>`;
+
+  document.getElementById("pie-chart").innerHTML = svgPaths;
+
+  // Legend
+  document.getElementById("chart-legend").innerHTML = names.map((name, i) => {
+    const amt  = portions[name];
+    const pct  = ((amt / tripTotal) * 100).toFixed(1);
+    const color = CHART_COLORS[i % CHART_COLORS.length];
+    const isMe = currentTrip.participants.find(p => p.name === name && p.email && p.email.toLowerCase() === currentUser?.email.toLowerCase());
+    return `<div style="display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:var(--radius-md);padding:12px 14px;border:1px solid var(--border)">
+      <div style="width:16px;height:16px;border-radius:4px;background:${color};flex-shrink:0"></div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:600;color:var(--text)">${name}${isMe?' (me)':''}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:1px">${pct}% of total</div>
+      </div>
+      <div style="font-size:18px;font-weight:700;color:var(--text)">$${amt.toFixed(2)}</div>
+    </div>`;
+  }).join("");
+
+  // Breakdown rows
+  document.getElementById("chart-breakdown").innerHTML = names.map(name => {
+    const amt = portions[name];
+    const pct = ((amt / tripTotal) * 100).toFixed(1);
+    return `<div class="preview-row"><span class="pr-label">${name}</span><span class="pr-val">$${amt.toFixed(2)} (${pct}%)</span></div>`;
+  }).join("");
+
+}
+
+// ─────────────────────────────────────────────────────────────
+// FEATURE 3: Edit Expense
+// ─────────────────────────────────────────────────────────────
+let editingExpense = null; // { rowIndex, expense }
+let editSplits     = {};   // { participantName: amount }
+let editPayer      = null;
+
+async function openEditExpense(rowIndex) {
+  showScreen("screen-edit-expense");
+  document.getElementById("edit-save-btn").disabled = true;
+  document.getElementById("edit-status").style.display = "block";
+  document.getElementById("edit-status").style.color = "var(--text3)";
+  document.getElementById("edit-status").textContent = "Loading expense...";
+
+  // Always fetch fresh data so splits are correct
+  try {
+    const result = await apiGet({ action: "getExpenses", sheetId: currentTrip.sheetId });
+    expenseLog = (result.expenses || []).map(e => ({ ...e, id: e.rowIndex }));
+    localStorage.setItem("expense-log-" + currentTrip.tripId, JSON.stringify(expenseLog));
+  } catch(err) {
+    alert("Could not load expense data: " + err.message);
+    showScreen("screen-trip-detail"); showDetailPanel("log"); return;
+  }
+
+  const expense = expenseLog.find(e => e.rowIndex === rowIndex);
+  if (!expense) { alert("Could not find expense. Try reloading the log."); showScreen("screen-trip-detail"); showDetailPanel("log"); return; }
+
+  editingExpense = { rowIndex, expense };
+  // Seed editSplits with clean numeric values
+  editSplits = {};
+  Object.entries(expense.splits || {}).forEach(([k,v]) => { editSplits[k] = parseMoney(v); });
+  editPayer  = expense.paidBy;
+
+  // Fill form fields
+  document.getElementById("edit-description").value    = expense.whatFor || "";
+  document.getElementById("edit-amount").value         = parseMoney(expense.total).toFixed(2);
+  document.getElementById("edit-notes").value          = expense.notes || "";
+  document.getElementById("edit-status").style.display = "none";
+  document.getElementById("edit-save-btn").disabled    = false;
+
+  // Build payer grid
+  document.getElementById("edit-payer-grid").innerHTML = currentTrip.participants.map(p => `
+    <button class="pill-btn ${p.name===editPayer?"selected":""}" id="edit-payer-${CSS.escape(p.name)}" onclick="selectEditPayer('${p.name}')">
+      ${p.name}
+    </button>`).join("");
+
+  // Build splits grid
+  renderEditSplitsGrid();
+}
+
+function selectEditPayer(name) {
+  editPayer = name;
+  currentTrip.participants.forEach(p => {
+    document.getElementById("edit-payer-"+CSS.escape(p.name))?.classList.toggle("selected", p.name===name);
+  });
+}
+
+function renderEditSplitsGrid() {
+  const total = parseFloat(document.getElementById("edit-amount").value) || 0;
+  document.getElementById("edit-splits-grid").innerHTML = currentTrip.participants.map((p,i) => {
+    const val = parseFloat(editSplits[p.name] || 0).toFixed(2);
+    return `<div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;border:1px solid var(--border)">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${p.name}</div>
+        <div style="font-size:11px;color:var(--text3)">${p.travelers} traveler${p.travelers>1?"s":""}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="color:var(--text3);font-size:15px">$</span>
+        <input type="number" inputmode="decimal" value="${val}"
+               id="edit-split-${CSS.escape(p.name)}"
+               oninput="onEditSplitChange('${p.name}', this.value)"
+               style="width:80px;padding:6px 8px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Inter',sans-serif;font-size:15px;font-weight:700;color:var(--text);outline:none;text-align:right"/>
+      </div>
+    </div>`;
+  }).join("");
+  updateEditSplitStatus();
+}
+
+function onEditAmountChange() {
+  // Recalculate splits proportionally when total changes
+  const total      = parseFloat(document.getElementById("edit-amount").value) || 0;
+  const included   = currentTrip.participants.filter(p => (parseFloat(editSplits[p.name])||0) > 0);
+  const totalTrav  = included.reduce((s,p) => s+p.travelers, 0);
+  if (totalTrav > 0) {
+    let assigned = 0;
+    included.forEach((p,i) => {
+      if (i === included.length-1) {
+        editSplits[p.name] = Math.round((total-assigned)*100)/100;
+      } else {
+        const share = Math.round(total*p.travelers/totalTrav*100)/100;
+        editSplits[p.name] = share; assigned += share;
+      }
+    });
+    currentTrip.participants.filter(p => !included.find(ip=>ip.name===p.name)).forEach(p=>{ editSplits[p.name]=0; });
+  }
+  renderEditSplitsGrid();
+}
+
+function onEditSplitChange(changedName, newValStr) {
+  const total      = parseFloat(document.getElementById("edit-amount").value) || 0;
+  const newVal     = Math.max(0, parseFloat(newValStr) || 0);
+  editSplits[changedName] = Math.round(newVal*100)/100;
+
+  // Redistribute remainder proportionally among others
+  const others     = currentTrip.participants.filter(p => p.name !== changedName);
+  const remainder  = Math.max(0, Math.round((total - newVal)*100)/100);
+  const totalTrav  = others.reduce((s,p) => s+p.travelers, 0);
+
+  if (totalTrav > 0 && remainder >= 0) {
+    let assigned = 0;
+    others.forEach((p,i) => {
+      if (i === others.length-1) {
+        editSplits[p.name] = Math.max(0, Math.round((remainder-assigned)*100)/100);
+      } else {
+        const share = Math.round(remainder*p.travelers/totalTrav*100)/100;
+        editSplits[p.name] = share; assigned += share;
+      }
+      // Update input field
+      const input = document.getElementById("edit-split-"+CSS.escape(p.name));
+      if (input) input.value = (editSplits[p.name]||0).toFixed(2);
+    });
+  }
+  updateEditSplitStatus();
+}
+
+function updateEditSplitStatus() {
+  const total   = parseFloat(document.getElementById("edit-amount").value) || 0;
+  const sumSplits = Object.values(editSplits).reduce((s,v) => s+(parseFloat(v)||0), 0);
+  const diff    = Math.round((total - sumSplits)*100)/100;
+  const statusEl = document.getElementById("edit-split-status");
+  if (Math.abs(diff) < 0.02) {
+    statusEl.textContent = "✓ Balanced";
+    statusEl.style.color = "var(--green)";
+  } else {
+    statusEl.textContent = diff > 0 ? `$${diff.toFixed(2)} unallocated` : `$${Math.abs(diff).toFixed(2)} over`;
+    statusEl.style.color = "var(--red)";
+  }
+}
+
+async function saveEditedExpense() {
+  if (!editingExpense) return;
+  const desc  = document.getElementById("edit-description").value.trim();
+  const total = parseFloat(document.getElementById("edit-amount").value) || 0;
+  const notes = document.getElementById("edit-notes").value.trim();
+  if (!desc)   { alert("Please enter a description."); return; }
+  if (!total)  { alert("Please enter a valid amount."); return; }
+
+  // Check balanced
+  const sumSplits = Object.values(editSplits).reduce((s,v)=>s+(parseFloat(v)||0),0);
+  if (Math.abs(total-sumSplits) > 0.02) { alert("Splits must add up to the total amount."); return; }
+
+  const btn    = document.getElementById("edit-save-btn");
+  const status = document.getElementById("edit-status");
+  btn.disabled = true; btn.textContent = "Saving...";
+  status.style.display = "block"; status.style.color = "var(--text3)";
+  status.textContent = "Updating Google Sheet...";
+
+  const expense = { whatFor: desc, paidBy: editPayer, total: total.toFixed(2), splits: editSplits, notes };
+
+  try {
+    await apiGet({ action: "updateExpense", sheetId: currentTrip.sheetId, rowIndex: editingExpense.rowIndex, participants: currentTrip.participants, expense });
+    status.style.color = "var(--green)"; status.textContent = "✓ Updated!";
+    // Reload log
+    await loadAndRenderLog();
+    setTimeout(() => { showScreen("screen-trip-detail"); showDetailPanel("log"); }, 800);
+  } catch(err) {
+    status.style.color = "var(--red)"; status.textContent = "Error: " + err.message;
+    btn.disabled = false; btn.textContent = "Save Changes";
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// FEATURE 4: Manual Split Editing on Add Form
+// ─────────────────────────────────────────────────────────────
+let manualSplitsActive = false;
+let manualSplits       = {}; // overrides auto calc when active
+
+function toggleManualSplits() {
+  manualSplitsActive = !manualSplitsActive;
+  const editor = document.getElementById("manual-splits-editor");
+  const btn    = document.getElementById("edit-splits-toggle-btn");
+  editor.style.display = manualSplitsActive ? "flex" : "none";
+  btn.textContent      = manualSplitsActive ? "Auto Split" : "Edit Splits";
+  btn.style.background = manualSplitsActive ? "var(--navy)" : "var(--surface2)";
+  btn.style.color      = manualSplitsActive ? "#fff" : "var(--navy)";
+  if (manualSplitsActive) {
+    // Seed manual splits from current auto splits
+    const total  = parseFloat(document.getElementById("exp-amount").value) || 0;
+    manualSplits = calcSplits(total);
+    renderManualSplitsGrid();
+  } else {
+    manualSplits = {};
+    updateSplitPreview();
+  }
+}
+
+function renderManualSplitsGrid() {
+  const total = parseFloat(document.getElementById("exp-amount").value) || 0;
+  document.getElementById("manual-splits-grid").innerHTML = currentTrip.participants.map(p => {
+    const val = parseFloat(manualSplits[p.name] || 0).toFixed(2);
+    return `<div style="display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:var(--radius-sm);padding:10px 12px;border:1px solid var(--border)">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${p.name}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="color:var(--text3);font-size:15px">$</span>
+        <input type="number" inputmode="decimal" value="${val}"
+               id="ms-${CSS.escape(p.name)}"
+               oninput="onManualSplitChange('${p.name}', this.value)"
+               style="width:80px;padding:6px 8px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Inter',sans-serif;font-size:15px;font-weight:700;color:var(--text);outline:none;text-align:right"/>
+      </div>
+    </div>`;
+  }).join("");
+  updateManualSplitRemaining();
+}
+
+function onManualSplitChange(changedName, newValStr) {
+  const total   = parseFloat(document.getElementById("exp-amount").value) || 0;
+  const newVal  = Math.max(0, parseFloat(newValStr) || 0);
+  manualSplits[changedName] = Math.round(newVal*100)/100;
+
+  // Redistribute remainder to others proportionally
+  const others    = currentTrip.participants.filter(p => p.name !== changedName);
+  const remainder = Math.max(0, Math.round((total - newVal)*100)/100);
+  const totalTrav = others.reduce((s,p) => s+p.travelers, 0);
+
+  if (totalTrav > 0) {
+    let assigned = 0;
+    others.forEach((p,i) => {
+      if (i === others.length-1) {
+        manualSplits[p.name] = Math.max(0, Math.round((remainder-assigned)*100)/100);
+      } else {
+        const share = Math.round(remainder*p.travelers/totalTrav*100)/100;
+        manualSplits[p.name] = share; assigned += share;
+      }
+      const input = document.getElementById("ms-"+CSS.escape(p.name));
+      if (input) input.value = (manualSplits[p.name]||0).toFixed(2);
+    });
+  }
+  updateManualSplitRemaining();
+  updatePreview();
+}
+
+function updateManualSplitRemaining() {
+  const total   = parseFloat(document.getElementById("exp-amount").value) || 0;
+  const used    = Object.values(manualSplits).reduce((s,v) => s+(parseFloat(v)||0), 0);
+  const remain  = Math.round((total-used)*100)/100;
+  const el      = document.getElementById("manual-splits-remaining");
+  if (el) {
+    el.textContent = Math.abs(remain) < 0.02 ? "✓ $0.00" : "$" + remain.toFixed(2);
+    el.style.color = Math.abs(remain) < 0.02 ? "var(--green)" : "var(--amber)";
+  }
+}
+
+function resetToAutoSplit() {
+  manualSplits = {};
+  const total  = parseFloat(document.getElementById("exp-amount").value) || 0;
+  manualSplits = calcSplits(total);
+  renderManualSplitsGrid();
+  updatePreview();
 }
 
 // ─────────────────────────────────────────────────────────────
