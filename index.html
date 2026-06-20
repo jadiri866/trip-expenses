@@ -306,6 +306,54 @@
     .manage-stat { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; }
     .manage-stat .ms-label { font-size: 12px; color: var(--text3); font-weight: 500; }
     .manage-stat .ms-val { font-size: 15px; font-weight: 700; color: var(--text); }
+
+    /* ── Invite Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      z-index: 300; display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-sheet {
+      background: var(--surface); border-radius: 20px 20px 0 0;
+      width: 100%; max-width: 430px;
+      padding: 0 0 env(safe-area-inset-bottom);
+      transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.34,1.1,0.64,1);
+      max-height: 90dvh; display: flex; flex-direction: column;
+    }
+    .modal-overlay.open .modal-sheet { transform: translateY(0); }
+    .modal-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 12px auto 0; flex-shrink: 0; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px 10px; flex-shrink: 0; }
+    .modal-title { font-size: 17px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+    .modal-close { background: var(--surface2); border: none; color: var(--text3); font-size: 18px; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+    .modal-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+    .invite-participant-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 14px; background: var(--surface2);
+      border: 1.5px solid var(--border); border-radius: var(--radius-md);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .invite-participant-row:active { background: var(--bg2); }
+    .invite-p-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--navy); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; flex-shrink: 0; }
+    .invite-p-info { flex: 1; min-width: 0; }
+    .invite-p-name { font-size: 15px; font-weight: 600; color: var(--text); }
+    .invite-p-email { font-size: 12px; color: var(--text3); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .invite-p-arrow { color: var(--text3); font-size: 18px; flex-shrink: 0; }
+
+    .invite-compose { display: flex; flex-direction: column; gap: 12px; }
+    .invite-to-badge { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; }
+    .invite-to-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text3); }
+    .invite-to-name { font-size: 14px; font-weight: 600; color: var(--navy); }
+    .invite-back-btn { background: none; border: none; color: var(--navy); font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; padding: 0; display: flex; align-items: center; gap: 4px; margin-bottom: 2px; }
+    .invite-back-btn::before { content: "‹"; font-size: 18px; line-height: 1; }
+    .invite-msg-area { width: 100%; min-height: 120px; padding: 12px 14px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.6; outline: none; resize: none; transition: border-color 0.15s; -webkit-appearance: none; }
+    .invite-msg-area:focus { border-color: var(--navy); background: var(--surface); }
+
+    /* Invite button next to Sheet */
+    .invite-link { display: inline-flex; align-items: center; gap: 5px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 100px; padding: 6px 12px; color: var(--navy); font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.15s; font-family: 'Inter', sans-serif; }
+    .invite-link:active { background: var(--bg2); }
   </style>
 </head>
 <body>
@@ -442,7 +490,10 @@
           <div class="eyebrow" id="detail-eyebrow">Trip</div>
           <div class="page-title" id="detail-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
         </div>
-        <a id="sheet-link" href="#" target="_blank" class="sheet-link">Sheet ↗</a>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onclick="showInviteModal()" class="invite-link" id="invite-btn">Invite ✉️</button>
+          <a id="sheet-link" href="#" target="_blank" class="sheet-link">Sheet ↗</a>
+        </div>
       </div>
     </div>
 
@@ -764,6 +815,22 @@
       <div id="review-expense-list" style="display:flex;flex-direction:column;gap:10px"></div>
       <button class="btn-primary" id="review-save-btn" onclick="saveReviewChanges()">Save Changes</button>
       <div id="review-status" style="display:none;font-size:13px;text-align:center;color:var(--text3);padding:4px 0"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- MODAL: Invite Travelers                                   -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="invite-modal" class="modal-overlay" onclick="handleInviteOverlayClick(event)">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <div class="modal-title" id="invite-modal-title">Invite Travelers</div>
+        <button class="modal-close" onclick="closeInviteModal()">✕</button>
+      </div>
+      <div class="modal-body" id="invite-modal-body">
+        <!-- Populated by JS -->
+      </div>
     </div>
   </div>
 
@@ -2329,7 +2396,112 @@ async function apiGet(payload) {
   return data;
 }
 
+// ─────────────────────────────────────────────────────────────
+// Invite Modal
+// ─────────────────────────────────────────────────────────────
+function showInviteModal() {
+  if (!currentTrip) return;
+  renderInviteParticipantList();
+  document.getElementById('invite-modal-title').textContent = 'Invite Travelers';
+  document.getElementById('invite-modal').classList.add('open');
+}
+
+function closeInviteModal() {
+  document.getElementById('invite-modal').classList.remove('open');
+}
+
+function handleInviteOverlayClick(e) {
+  if (e.target === document.getElementById('invite-modal')) closeInviteModal();
+}
+
+function renderInviteParticipantList() {
+  const body = document.getElementById('invite-modal-body');
+  const appUrl = 'https://jadiri866.github.io/trip-expenses';
+  const participants = currentTrip.participants || [];
+
+  if (participants.length === 0) {
+    body.innerHTML = `<div class="empty-state" style="padding:32px 0"><div class="es-icon">👥</div><div class="es-title">No participants yet</div><div class="es-sub">Add travelers to the trip first.</div></div>`;
+    return;
+  }
+
+  const intro = `<div style="font-size:13px;color:var(--text3);line-height:1.6;padding:2px 0 4px">Tap a traveler to compose and send their invite.</div>`;
+  const rows = participants.map(p => {
+    const initials = p.name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+    const emailLine = p.email ? `<div class="invite-p-email">${p.email}</div>` : `<div class="invite-p-email" style="color:var(--amber)">No email on file</div>`;
+    return `<div class="invite-participant-row" onclick="showInviteCompose(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+      <div class="invite-p-avatar">${initials}</div>
+      <div class="invite-p-info">
+        <div class="invite-p-name">${p.name}</div>
+        ${emailLine}
+      </div>
+      <div class="invite-p-arrow">›</div>
+    </div>`;
+  }).join('');
+
+  body.innerHTML = intro + rows;
+}
+
+function showInviteCompose(participant) {
+  const appUrl = 'https://jadiri866.github.io/trip-expenses';
+  const tripName = currentTrip.tripName;
+  const defaultMsg = `Hey ${participant.name}! 👋\n\nI'm using Trip Expenses to track our shared costs for ${tripName}. It makes splitting everything super easy.\n\nTap the link to open the app and add this trip:\n${appUrl}\n\nSee you there! ✈️`;
+
+  const body = document.getElementById('invite-modal-body');
+  document.getElementById('invite-modal-title').textContent = 'Compose Invite';
+
+  body.innerHTML = `
+    <button class="invite-back-btn" onclick="renderInviteParticipantList();document.getElementById('invite-modal-title').textContent='Invite Travelers'">Back</button>
+    <div class="invite-compose">
+      <div class="invite-to-badge">
+        <span class="invite-to-label">To</span>
+        <span class="invite-to-name">${participant.name}</span>
+        ${participant.email ? `<span style="font-size:12px;color:var(--text3);margin-left:4px">(${participant.email})</span>` : ''}
+      </div>
+      <div>
+        <label class="field-label">Message</label>
+        <textarea class="invite-msg-area" id="invite-message" rows="7">${defaultMsg}</textarea>
+      </div>
+      <button class="btn-primary" onclick="sendInvite(${JSON.stringify(participant).replace(/"/g,'&quot;')})">
+        Send via… ↗
+      </button>
+      <div style="font-size:11px;color:var(--text3);text-align:center;line-height:1.6">
+        Opens your phone's share sheet — choose Messages, Mail, WhatsApp, or any app.
+      </div>
+    </div>`;
+}
+
+async function sendInvite(participant) {
+  const msg = document.getElementById('invite-message').value.trim();
+  if (!msg) return;
+
+  if (!navigator.share) {
+    // Fallback: copy to clipboard
+    try {
+      await navigator.clipboard.writeText(msg);
+      showToast('📋 Invite copied to clipboard!', false);
+      closeInviteModal();
+    } catch(e) {
+      alert('Your browser doesn\'t support sharing. Copy this message manually:\n\n' + msg);
+    }
+    return;
+  }
+
+  try {
+    await navigator.share({
+      title: `Join me on ${currentTrip.tripName} — Trip Expenses`,
+      text: msg
+    });
+    closeInviteModal();
+  } catch(e) {
+    // User cancelled share sheet — do nothing
+    if (e.name !== 'AbortError') {
+      console.error('Share failed:', e);
+    }
+  }
+}
+
 async function apiPost(payload) { return apiGet(payload); }
+
 </script>
 </body>
 </html>
