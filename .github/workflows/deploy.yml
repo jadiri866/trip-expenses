@@ -2,18 +2,34 @@ name: Deploy to Apps Script
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+    paths:
+      - 'trip-tracker-script.gs'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
-      - run: npm install -g @google/clasp
-      - name: Write clasp credentials
+          node-version: '20'
+
+      - name: Install clasp
+        run: npm install -g @google/clasp
+
+      - name: Write .clasprc.json
         run: echo '${{ secrets.CLASPRC }}' > ~/.clasprc.json
+
+      - name: Write .clasp.json
+        run: echo '${{ secrets.CLASP_JSON }}' > .clasp.json
+
       - name: Push to Apps Script
         run: clasp push --force
+
+      - name: Deploy new version
+        run: clasp deploy --deploymentId ${{ secrets.DEPLOYMENT_ID }} --description "Auto-deploy from GitHub"
