@@ -1994,8 +1994,9 @@ function onEditSplitChange(changedName, newValStr) {
   const newVal     = Math.max(0, parseFloat(newValStr) || 0);
   editSplits[changedName] = Math.round(newVal*100)/100;
 
-  // Redistribute remainder proportionally among others
-  const others     = currentTrip.participants.filter(p => p.name !== changedName);
+  // Redistribute remainder proportionally only among travelers already part of this split
+  // (nonzero split = included; someone previously excluded stays excluded unless edited directly)
+  const others     = currentTrip.participants.filter(p => p.name !== changedName && (parseFloat(editSplits[p.name])||0) > 0);
   const remainder  = Math.max(0, Math.round((total - newVal)*100)/100);
   const totalTrav  = others.reduce((s,p) => s+p.travelers, 0);
 
@@ -2112,10 +2113,17 @@ function onManualSplitChange(changedName, newValStr) {
   const newVal  = Math.max(0, parseFloat(newValStr) || 0);
   manualSplits[changedName] = Math.round(newVal*100)/100;
 
-  // Redistribute remainder to others proportionally
-  const others    = currentTrip.participants.filter(p => p.name !== changedName);
+  // Redistribute remainder only to other travelers currently included in this expense
+  const others    = currentTrip.participants.filter(p => p.name !== changedName && includedMap[p.name]);
   const remainder = Math.max(0, Math.round((total - newVal)*100)/100);
   const totalTrav = others.reduce((s,p) => s+p.travelers, 0);
+
+  // Zero out anyone excluded so they don't retain a stale split value
+  currentTrip.participants.filter(p => p.name !== changedName && !includedMap[p.name]).forEach(p => {
+    manualSplits[p.name] = 0;
+    const input = document.getElementById("ms-"+CSS.escape(p.name));
+    if (input) input.value = "0.00";
+  });
 
   if (totalTrav > 0) {
     let assigned = 0;
